@@ -16,10 +16,10 @@ const CHIN = 152;
 
 const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
   const groupRef = useRef();
-  
+
   // OPTIMIZATION: Access live 3D viewport measurements to scale flawlessly on Mobile vs Desktop
   const { viewport } = useThree();
-  
+
   // Use R3F GLTF loader to load our generated basket
   const { scene, materials } = useGLTF(basketModelUrl);
 
@@ -30,22 +30,22 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
   const clonedScene = React.useMemo(() => scene.clone(), [scene]);
 
   useEffect(() => {
-    // Style the basket to look ultra-modern
+    // Style the basket to look ultra-modern and premium
     clonedScene.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
-        
-        // Replace basic material with high quality glassmorphic / metallic physical material
+
+        // ✨ NEW DESIGN: Luxurious Golden Wicker / Polished Bronze look
         child.material = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#d97706'), // Amber/Gold
-          roughness: 0.2,
-          metalness: 0.8,
-          clearcoat: 1.0,
-          clearcoatRoughness: 0.1,
-          transmission: 0.3, // Glassy transmission
-          thickness: 0.5,
-          ior: 1.5,
+          color: new THREE.Color('#92400e'), // Rich amber-bronze base
+          roughness: 0.6, // Textured, not overly glossy
+          metalness: 0.4, // Elegant metallic sheen
+          clearcoat: 0.4, // Protective varnish coating
+          clearcoatRoughness: 0.3,
+          sheen: 1.0, // Velvet/fibrous micro-sheen for wicker-like texture
+          sheenColor: new THREE.Color('#f59e0b'), // Golden highlights
+          thickness: 0.5
         });
       }
     });
@@ -56,22 +56,22 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     clonedScene.rotation.x = Math.PI / 12;
   }, [clonedScene]);
 
-  // Core tracking logic running inside Three.js loop (60 FPS)
-  useFrame((state, delta) => {
-    // ⚡ OPTIMIZATION: Directly extract coordinates from the mutable ref!
-    // This runs on the rendering thread and NEVER triggers a React reconcile pass.
-    const faceLandmarks = faceDataRef.current ? faceDataRef.current[faceIndex] : null;
+  // OPTIMIZATION: Limit execution rate to match throttled detection inputs
+  useFrame(() => {
+    if (!faceDataRef.current || !groupRef.current) return;
+
+    const faceLandmarks = faceDataRef.current[faceIndex];
 
     if (!faceLandmarks || !groupRef.current) {
       // Gradually hide/fade out or lower the basket when no face is detected
       groupRef.current.visible = THREE.MathUtils.lerp(
-        groupRef.current.visible ? 1 : 0, 
-        0, 
+        groupRef.current.visible ? 1 : 0,
+        0,
         0.1
       ) > 0.05;
       return;
     }
-    
+
     groupRef.current.visible = true;
 
     // 1. Fetch key face landmarks with MIRRORED CORRECTION (conditional on facingMode)
@@ -80,10 +80,10 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     const getMirrored = (idx) => {
       const pt = faceLandmarks[idx];
       if (!pt) return { x: 0.5, y: 0.5, z: 0 };
-      return { 
-        x: isFrontCamera ? 1.0 - pt.x : pt.x, 
-        y: pt.y, 
-        z: pt.z 
+      return {
+        x: isFrontCamera ? 1.0 - pt.x : pt.x,
+        y: pt.y,
+        z: pt.z
       };
     };
 
@@ -95,14 +95,14 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     // 2. Calculate face dimensions for DYNAMIC AUTO-ADJUSTMENT scaling
     // This ensures the basket gets larger/smaller as the user moves closer/further from camera.
     const faceWidth3D = Math.sqrt(
-      Math.pow(pRight.x - pLeft.x, 2) + 
-      Math.pow(pRight.y - pLeft.y, 2) + 
+      Math.pow(pRight.x - pLeft.x, 2) +
+      Math.pow(pRight.y - pLeft.y, 2) +
       Math.pow(pRight.z - pLeft.z, 2)
     );
 
     const faceHeight3D = Math.sqrt(
-      Math.pow(pForehead.x - pChin.x, 2) + 
-      Math.pow(pForehead.y - pChin.y, 2) + 
+      Math.pow(pForehead.x - pChin.x, 2) +
+      Math.pow(pForehead.y - pChin.y, 2) +
       Math.pow(pForehead.z - pChin.z, 2)
     );
 
@@ -132,7 +132,7 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     // for vertical phone aspect ratios versus landscape desktop screens!
     const baseWidthScale = viewport.width;
     const baseHeightScale = viewport.height;
-    
+
     const rawForeheadX = (pForehead.x - 0.5) * baseWidthScale;
     const rawForeheadY = -(pForehead.y - 0.5) * baseHeightScale;
     const rawForeheadZ = pForehead.z * -12; // Map depth values
@@ -144,13 +144,13 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     // Calibrate upward projection to scale linearly with screen height (viewport.height)
     // to prevent it from flying too high up on tall vertical mobile screens!
     // ⚡ TUNED: Reduced from 0.27 to 0.20 to lower the basket snugly onto the user's head!
-    const upwardOffset = faceHeight3D * (viewport.height * 0.20); 
+    const upwardOffset = faceHeight3D * (viewport.height * 0.20);
     const targetPosition = headPosition.clone().addScaledVector(vUp, upwardOffset);
 
     // 5. Apply Dynamic Viewport Scaling
     // Reduces base coefficient proportionally to horizontal viewport width, 
     // resolving the 'giant basket' bug on narrow portrait phone devices.
-    const baseBasketScale = viewport.width * 0.50; 
+    const baseBasketScale = viewport.width * 0.50;
     const targetScaleFactor = faceWidth3D * baseBasketScale;
     const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
 
@@ -163,7 +163,7 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     // Construct Target Quaternion (Rotation) directly from local face vectors
     const rotationMatrix = new THREE.Matrix4();
     rotationMatrix.makeBasis(vRight, vUp, vForward);
-    
+
     const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(rotationMatrix);
     groupRef.current.quaternion.slerp(targetQuaternion, damping);
 
@@ -173,22 +173,39 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     <group ref={groupRef} dispose={null}>
       {/* Main imported GLB mesh */}
       <primitive object={clonedScene} />
-      
-      {/* 🪨 Realistic Rock Stack placed inside the Basket */}
-      {/* ⚡ MIRROR FIX: Rotate 180deg (Math.PI) around Y when using front camera to un-mirror the text! */}
-      <mesh position={[0, 1.0, 0]} rotation={[-Math.PI / 12, isFrontCamera ? Math.PI : 0, 0]}>
-        {/* Aspect ratio suited for a tall stack of rocks */}
+
+      {/* 🪨 Realistic 3D Rock Stack placed inside the Basket */}
+      {/* ⚡ LIGHTING & TEXTURE OVERHAUL: Renders with bump-mapped depth, casts shadows, and balances correctly */}
+      <mesh 
+        position={[0, 0.9, 0.1]} 
+        rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 12), isFrontCamera ? Math.PI : 0, 0]}
+        castShadow
+        receiveShadow
+      >
+        {/* Aspect ratio perfectly suited for a tall, natural stack of rocks */}
         <planeGeometry args={[1.2, 1.8]} />
-        <meshBasicMaterial 
-          map={rocksTexture} 
-          transparent={true} 
-          depthWrite={false} 
-          side={THREE.DoubleSide} 
+        <meshStandardMaterial
+          map={rocksTexture}
+          bumpMap={rocksTexture} // ⚡ RENDER TRICK: Convert luminance to depth map for real stone crags!
+          bumpScale={0.06} // Strong depth without distortion
+          transparent={true}
+          roughness={0.85} // Matte stony surface
+          metalness={0.05} // Non-metallic
+          side={THREE.FrontSide} // Optimized rendering
+          alphaTest={0.25} // Crisp shadows and seamless blending
         />
       </mesh>
+
+      {/* 💡 Dynamic internal lighting to illuminate the stone engravings and basket interior */}
+      <pointLight color="#fbbf24" intensity={4.0} distance={5} position={[0, 0.35, 0.3]} castShadow />
       
-      {/* Add a natural localized ambient light inside the basket for gentle illumination */}
-      <pointLight color="#f59e0b" intensity={1.2} distance={4} position={[0, 0.3, 0]} />
+      {/* ✨ Specialized Spotlight pointing at the stones to emphasize their 3D bump textures */}
+      <directionalLight 
+        color="#ffffff" 
+        intensity={2.5} 
+        position={[0, 4, 3]} 
+        castShadow 
+      />
     </group>
   );
 };
