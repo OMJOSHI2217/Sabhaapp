@@ -1,10 +1,11 @@
 import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Import the GLB model directly as a static URL asset using Vite's ?url query
 import basketModelUrl from '../models/basket.glb?url';
+import rocksImageUrl from '../assets/rocks.png';
 
 // Landmarks lookup for placement
 const NOSE_TIP = 1;
@@ -21,6 +22,9 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
   
   // Use R3F GLTF loader to load our generated basket
   const { scene, materials } = useGLTF(basketModelUrl);
+
+  // Load the rocks picture as a texture to display inside the basket
+  const rocksTexture = useTexture(rocksImageUrl);
 
   // Clone the scene to avoid shared state issues and customize materials
   const clonedScene = React.useMemo(() => scene.clone(), [scene]);
@@ -170,6 +174,18 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
       {/* Main imported GLB mesh */}
       <primitive object={clonedScene} />
       
+      {/* 🪨 Realistic Rock Stack placed inside the Basket */}
+      <mesh position={[0, 1.0, 0]} rotation={[-Math.PI / 12, 0, 0]}>
+        {/* Aspect ratio suited for a tall stack of rocks */}
+        <planeGeometry args={[1.2, 1.8]} />
+        <meshBasicMaterial 
+          map={rocksTexture} 
+          transparent={true} 
+          depthWrite={false} 
+          side={THREE.DoubleSide} 
+        />
+      </mesh>
+      
       {/* Add a natural localized ambient light inside the basket for gentle illumination */}
       <pointLight color="#f59e0b" intensity={1.2} distance={4} position={[0, 0.3, 0]} />
     </group>
@@ -178,5 +194,6 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
 
 // Preload assets
 useGLTF.preload(basketModelUrl);
+useTexture.preload(rocksImageUrl);
 
 export default BasketModel;
