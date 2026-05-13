@@ -248,8 +248,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
             
-            // Perfectly calibrated vertical steps for the massive upscaled cards
-            const yPos = 0.75 + index * 0.74;
+            // Tightened step interval from 0.74 to 0.60 to completely close the air gap between rocks!
+            const yPos = 0.70 + index * 0.60;
             
             const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
             const zOffset = 0.15 + (index * 0.015); 
