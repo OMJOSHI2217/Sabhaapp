@@ -1,9 +1,9 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Import custom images from target directory
+// Import custom images
 import imgStoneBasket from '../images/Stone Basket.png';
 import imgAdmission from '../images/Admission.png';
 import imgExam from '../images/Exam.png';
@@ -13,13 +13,12 @@ import imgResults from '../images/Results.png';
 import imgStudentCareer from '../images/Student Career.png';
 import imgWife from '../images/Wife.png';
 
-// Landmarks lookup for placement
+// Landmarks lookup
 const FOREHEAD = 10;
 const LEFT_CHEEK = 234;
 const RIGHT_CHEEK = 454;
 const CHIN = 152;
 
-// Milestone metadata configuration and relative sequence order
 const MILESTONES = [
   { id: "Student Career", label: "🎓 Student Career", img: imgStudentCareer },
   { id: "Admission", label: "📝 Admission", img: imgAdmission },
@@ -61,18 +60,16 @@ const MagicalDust = () => {
   );
 };
 
-// 🚀 Primary Exported AR Interface
-const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
+// 🚀 Primary Exported AR Interface (Accepts selectedItems from parent state)
+const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems }) => {
   const groupRef = useRef();
   const basketRef = useRef();
   const glowRef = useRef();
   const spotRef = useRef();
   const { viewport } = useThree();
 
-  // Load dynamic basket texture
+  // Load dynamic textures
   const texStoneBasket = useTexture(imgStoneBasket);
-
-  // Load 7 user milestone textures
   const texAdmission = useTexture(imgAdmission);
   const texExam = useTexture(imgExam);
   const texIncrement = useTexture(imgIncrement);
@@ -81,7 +78,6 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
   const texStudentCareer = useTexture(imgStudentCareer);
   const texWife = useTexture(imgWife);
 
-  // Map loaded textures to keys
   const textures = useMemo(() => ({
     "Student Career": texStudentCareer,
     "Admission": texAdmission,
@@ -92,35 +88,20 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
     "Wife": texWife,
   }), [texStudentCareer, texAdmission, texExam, texResults, texInterview, texIncrement, texWife]);
 
-  // Interactive Milestone Selection State
-  const [selectedItems, setSelectedItems] = useState({
-    "Student Career": true,
-    "Admission": false,
-    "Exam": false,
-    "Results": false,
-    "Interview": false,
-    "Increment": false,
-    "Wife": false,
-  });
+  // Safe guard in case component loads before parent state propagates
+  const activeItems = selectedItems || { "Student Career": true };
+
+  // Filter chronological order based on parent selection state
+  const activeSelected = useMemo(() => {
+    return MILESTONES.filter(m => activeItems[m.id]);
+  }, [activeItems]);
 
   // Smooth dynamic basket growth interpolation
   const currentScaleRef = useRef(1.0);
 
-  const toggleItem = (id) => {
-    setSelectedItems(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-
-  // Filter active chronological order
-  const activeSelected = useMemo(() => {
-    return MILESTONES.filter(m => selectedItems[m.id]);
-  }, [selectedItems]);
-
   useFrame((state) => {
-    // 1. Animate basket growth based on active milestones (12% boost per milestone)
-    const targetBasketScale = 1.0 + activeSelected.length * 0.12;
+    // 1. 🚀 Dynamic Scaling Feedback (+18% scale boost per item for huge impact!)
+    const targetBasketScale = 1.0 + activeSelected.length * 0.18;
     currentScaleRef.current = THREE.MathUtils.lerp(currentScaleRef.current, targetBasketScale, 0.12);
 
     if (basketRef.current) {
@@ -181,11 +162,11 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
     const z = pForehead.z * -11.5;
 
     const headPos = new THREE.Vector3(x, y, z);
-    // Calibrated offset upward of forehead
-    const upwardOffset = faceHeight * (viewport.height * 0.20); 
+    const upwardOffset = faceHeight * (viewport.height * 0.18); // Rest robustly lower onto forehead
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
-    const baseScale = viewport.width * 0.44; 
+    // 🚀 MASSIVE SIZE BOOST: Upped baseScale from 0.44 to 0.64 (+45% Default Size Enlargement!)
+    const baseScale = viewport.width * 0.64; 
     const targetScaleFactor = faceWidth * baseScale;
     const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
 
@@ -201,59 +182,20 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
 
   return (
     <group ref={groupRef} dispose={null}>
-      {/* 📺 Floating Interactive Overlay */}
-      <Html fullscreen style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        
-        {/* Interactive Checklist Container */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-stone-950/85 backdrop-blur-xl p-4 rounded-3xl border border-amber-500/30 text-amber-400 font-mono shadow-2xl z-50 flex flex-col gap-2 pointer-events-auto select-none w-44 md:w-52 max-h-[80vh] transition-all duration-300 hover:border-amber-500/60 hover:shadow-amber-500/10">
-          <div className="font-bold text-xs tracking-widest border-b border-amber-500/30 pb-2 mb-1 text-center uppercase text-amber-500">
-            🎯 Milestones
-          </div>
-          
-          {MILESTONES.map((m) => (
-            <label
-              key={m.id}
-              className={`flex items-center gap-2.5 text-[11px] md:text-xs cursor-pointer py-2 px-2.5 rounded-xl transition-all duration-200 ${
-                selectedItems[m.id] 
-                  ? "bg-amber-500/15 text-white shadow-inner border border-amber-500/20" 
-                  : "text-stone-400 hover:bg-white/5 border border-transparent"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={selectedItems[m.id]}
-                onChange={() => toggleItem(m.id)}
-                className="accent-amber-500 w-4.5 h-4.5 cursor-pointer shrink-0 rounded"
-              />
-              <span className="truncate select-none">{m.label}</span>
-            </label>
-          ))}
-        </div>
-
-        {/* Size badge */}
-        <div className="absolute bottom-24 right-5 bg-stone-950/75 backdrop-blur-md border border-amber-500/30 px-4 py-1.5 rounded-2xl text-amber-400 text-[11px] md:text-xs font-mono z-50 font-bold shadow-lg">
-          📦 Basket Size: <span className="text-white">{currentScaleRef.current.toFixed(2)}x</span>
-        </div>
-
-        {/* Top Notification */}
-        <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md border border-white/10 text-stone-300 text-[10px] md:text-xs px-4 py-1.5 rounded-full font-mono select-none text-center z-50 tracking-wide shadow-md">
-          ✨ Stack your life stones inside the basket ✨
-        </div>
-      </Html>
-
-      {/* 1. 🧺 Custom 2D Image-Based Basket */}
+      
+      {/* 1. 🧺 Enlarged Custom Image-Based Basket */}
       <group ref={basketRef}>
         <mesh 
           rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 24), isFrontCamera ? Math.PI : 0, 0]}
-          position={[0, 0.1, 0.0]} // Slightly elevated to align bottom base naturally on forehead
+          position={[0, 0.05, 0.0]} 
           castShadow 
           receiveShadow
         >
-          {/* Matches the 1800x1200 3:2 proportions of Stone Basket.png */}
-          <planeGeometry args={[1.8, 1.2]} />
+          {/* 🚀 ENLARGED BASE GEOMETRY: Widened from [1.8, 1.2] to [2.4, 1.6] (Massive appearance!) */}
+          <planeGeometry args={[2.4, 1.6]} />
           <meshStandardMaterial 
             map={texStoneBasket}
-            bumpMap={texStoneBasket} // Render-trick depth
+            bumpMap={texStoneBasket}
             bumpScale={0.04}
             transparent={true}
             alphaTest={0.22}
@@ -264,23 +206,22 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
         </mesh>
       </group>
 
-      {/* 2. 🪨 3D Selected Milestone Pictures Stack */}
+      {/* 2. 🪨 Enlarged 3D Selected Milestone Pictures Stack */}
       <group>
         {activeSelected.length === 0 ? (
           <Html center position={[0, 0.8, 0.1]} distanceFactor={4.5}>
-            <div className="text-amber-500/70 font-mono text-xs italic tracking-widest whitespace-nowrap bg-stone-950/80 px-5 py-2.5 rounded-full border border-amber-500/30 shadow-2xl animate-pulse select-none pointer-events-none">
-              💡 Select milestones to start!
+            <div className="text-amber-500/75 font-mono text-xs italic tracking-widest bg-stone-950/80 px-5 py-2.5 rounded-full border border-amber-500/30 shadow-2xl animate-pulse select-none pointer-events-none">
+              💡 Check milestones to stack items!
             </div>
           </Html>
         ) : (
-          // Stacking engine placed slightly forward (+0.05) on Z-axis for pristine overlapping
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
             
-            // Distribute layers vertically, overlapping into the image-basket cavity
-            const yPos = 0.35 + index * 0.38;
+            // Distribute layers with robust height steps
+            const yPos = 0.32 + index * 0.42;
             
-            const xOffset = (index % 2 === 0 ? -0.03 : 0.03);
+            const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
             const zOffset = 0.15 + (index * 0.01); 
             const zRot = (index % 2 === 0 ? -0.035 : 0.035);
             const xRot = (isFrontCamera ? 1 : -1) * (Math.PI / 14);
@@ -293,7 +234,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
                 castShadow
                 receiveShadow
               >
-                <planeGeometry args={[1.35, 0.9]} />
+                {/* 🚀 ENLARGED STACK CARDS: Scaled from [1.35, 0.9] to [1.72, 1.15] for robust clarity */}
+                <planeGeometry args={[1.72, 1.15]} />
                 <meshStandardMaterial 
                   map={texture}
                   bumpMap={texture}
@@ -310,7 +252,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
         )}
       </group>
 
-      {/* 3. 🌟 Particle Cloud */}
+      {/* 3. 🌟 Atmosphere */}
       <MagicalDust />
 
       {/* 4. 💡 Handcrafted Realism Lighting */}
@@ -338,7 +280,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
   );
 };
 
-// Preload images
+// Preload
 useTexture.preload(imgStoneBasket);
 MILESTONES.forEach(m => {
   useTexture.preload(m.img);

@@ -9,49 +9,67 @@ import BasketModel from './components/BasketModel';
 
 import './App.css';
 
+// Milestone lookup for checklist (ID matching BasketModel)
+const MILESTONES = [
+  { id: "Student Career", label: "🎓 Student Career" },
+  { id: "Admission", label: "📝 Admission" },
+  { id: "Exam", label: "✍️ Exam" },
+  { id: "Results", label: "🏆 Results" },
+  { id: "Interview", label: "👔 Interview" },
+  { id: "Increment", label: "💰 Increment" },
+  { id: "Wife", label: "❤️ Wife" }
+];
+
 function App() {
   const [videoElement, setVideoElement] = useState(null);
   
-  // ⚡ ULTIMATE OPTIMIZATION: Decoupled live tracking data from React State!
-  // By storing coordinate arrays in a Ref, we completely eliminate the catastrophic 60FPS 
-  // React re-render churn. The ThreeJS context reads directly from this Ref in its own thread loop!
   const faceDataRef = useRef([]); 
   const [numFaces, setNumFaces] = useState(0); 
   
   const handleFaceData = React.useCallback((landmarksArray) => {
     faceDataRef.current = landmarksArray;
-    
-    // Only trigger expensive React component updates IF the absolute number of faces shifts.
-    // Normal movement updates (coordinate shifts) remain entirely off the React Thread!
     if (landmarksArray.length !== numFaces) {
       setNumFaces(landmarksArray.length);
     }
   }, [numFaces]);
 
-  // Feature States: Front/Rear camera toggle and Shutter visual flash
+  // Feature States
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
 
-  // Advanced Merge Capture Routine:
-  // Stitches the raw HTML5 Video Buffer and the WebGL Drawing Buffer into a single 
-  // high-resolution PNG image while maintaining correct spatial mirroring
+  // --- Lifted Milestone State (Now reliably functioning outside AR View!) ---
+  const [selectedItems, setSelectedItems] = useState({
+    "Student Career": true,
+    "Admission": false,
+    "Exam": false,
+    "Results": false,
+    "Interview": false,
+    "Increment": false,
+    "Wife": false,
+  });
+
+  const toggleItem = (id) => {
+    setSelectedItems(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const activeCount = Object.values(selectedItems).filter(Boolean).length;
+  const dynamicScaleText = (1.0 + activeCount * 0.18).toFixed(2);
+
   const handleCapturePhoto = () => {
     if (!videoElement) return;
-
     const canvas3d = document.querySelector('.canvas-container canvas');
     if (!canvas3d) return;
 
-    // Step 1: Compute full sensor resolution
     const outputWidth = videoElement.videoWidth;
     const outputHeight = videoElement.videoHeight;
-
-    // Step 2: Construct transient merging canvas
     const merged = document.createElement('canvas');
     merged.width = outputWidth;
     merged.height = outputHeight;
     const ctx = merged.getContext('2d');
 
-    // Step 3: Render Background (Conditional horizontal inversion for front camera)
     ctx.save();
     if (isFrontCamera) {
       ctx.translate(outputWidth, 0);
@@ -60,41 +78,37 @@ function App() {
     ctx.drawImage(videoElement, 0, 0, outputWidth, outputHeight);
     ctx.restore();
 
-    // Step 4: Overlay 3D Buffer (R3F aligns automatically by stretching canvas mapping)
     ctx.drawImage(canvas3d, 0, 0, outputWidth, outputHeight);
 
-    // Step 5: Fire visual Flash UX triggers
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 250);
 
-    // Step 6: Initiate dynamic filesystem downloader
     const link = document.createElement('a');
     link.download = `Basket_AR_Snap_${Date.now()}.png`;
     link.href = merged.toDataURL('image/png');
     link.click();
   };
 
-  // Camera Rotation trigger
   const handleToggleCamera = () => {
     setIsFrontCamera(prev => !prev);
     faceDataRef.current = [];
-    setNumFaces(0); // Force neural engine recalibration on hardware switch
+    setNumFaces(0);
   };
 
   const hasFaces = numFaces > 0;
 
   return (
     <div className="app-container">
-      {/* Flash feedback overlay */}
+      {/* Flash overlay */}
       <div className={`shutter-flash ${isFlashing ? 'active' : ''}`} />
 
-      {/* Decorative Background Aura Blobs */}
+      {/* Decorative aura blobs */}
       <div className="bg-blobs">
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>
       </div>
 
-      {/* Sleek Top Badge Indicators */}
+      {/* Top HUD tracking indicators */}
       <div className="hud-container">
         <div className="hud-item glass-panel" style={{flexDirection: 'row', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 1rem'}}>
           <div className={`status-indicator ${hasFaces ? 'active' : ''}`} />
@@ -110,16 +124,46 @@ function App() {
         </div>
       </div>
 
-      {/* Central Augmented Reality Frame */}
+      {/* Central Viewport */}
       <div className="game-viewport glass-panel">
         
-        {/* 1. Augmented Video Stream */}
+        {/* 🚀 ULTIMATE RENDER UPGRADE: EXTERNAL INTERACTIVE CHECKBOX DASHBOARD */}
+        {/* Placed OUTSIDE R3F Canvas, fully operable and catches DOM PointerEvents flawlessly */}
+        <div className="milestones-dashboard-outer">
+          <div className="md-header">
+            <span>🎯 Milestones</span>
+            <span style={{ color: '#fde047' }}>📦 Scale: {dynamicScaleText}x</span>
+          </div>
+          
+          <div className="md-checkbox-row">
+            {MILESTONES.map((m) => (
+              <label 
+                key={m.id} 
+                className={`md-item ${selectedItems[m.id] ? 'selected' : ''}`}
+              >
+                <input 
+                  type="checkbox"
+                  checked={selectedItems[m.id]}
+                  onChange={() => toggleItem(m.id)}
+                  className="md-checkbox-input"
+                />
+                <span>{m.label}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="md-footer-text">
+            <span>✨ Stack your life stones inside the basket ✨</span>
+          </div>
+        </div>
+
+        {/* Video Stream */}
         <CameraFeed 
           onVideoReady={setVideoElement} 
           facingMode={isFrontCamera ? "user" : "environment"}
         />
 
-        {/* 2. Neural Engine Face Landmarker */}
+        {/* Neural Engine */}
         {videoElement && (
           <FaceTracker 
             videoElement={videoElement} 
@@ -128,7 +172,7 @@ function App() {
           />
         )}
 
-        {/* 3. Interactive 3D WebGL Overlay */}
+        {/* 3. 3D WebGL Overlay */}
         <div className="canvas-container">
           <Canvas
             shadows
@@ -136,10 +180,10 @@ function App() {
             gl={{ 
               antialias: true, 
               alpha: true,
-              preserveDrawingBuffer: true // 👈 ESSENTIAL: Prevents clearing buffer to allow capturing snapshots!
+              preserveDrawingBuffer: true 
             }}
             onCreated={({ gl }) => {
-              gl.setClearColor(0x000000, 0); // Force transparency
+              gl.setClearColor(0x000000, 0);
             }}
           >
             <ambientLight intensity={1.0} />
@@ -149,21 +193,17 @@ function App() {
               castShadow
             />
             
-            {/* PBR Environment Mapping */}
             <Suspense fallback={null}>
               <Environment preset="city" />
               
-              {/* SINGLE FACE RENDERER:
-                  Renders a single 3D BasketModel fetching live matrix updates 
-                  from the faceDataRef without triggering any React re-renders. */}
               <BasketModel 
                 faceIndex={0}
                 faceDataRef={faceDataRef} 
                 isFrontCamera={isFrontCamera}
+                selectedItems={selectedItems} // Pass selected items down to R3F engine!
               />
             </Suspense>
 
-            {/* Soft Contact Shadow map */}
             <ContactShadows
               position={[0, -4, 0]}
               opacity={0.3}
@@ -174,10 +214,9 @@ function App() {
           </Canvas>
         </div>
 
-        {/* UI Camera Control Suite (Bottom Floating Bar) */}
+        {/* Bottom Controls */}
         {videoElement && (
           <div className="camera-controls">
-            {/* Toggle Camera Button */}
             <button 
               className="control-btn glass-panel ripple" 
               onClick={handleToggleCamera}
@@ -186,7 +225,6 @@ function App() {
               <RefreshCw size={24} color="white" />
             </button>
 
-            {/* Huge Shutter Capture Button */}
             <button 
               className="shutter-btn ripple" 
               onClick={handleCapturePhoto}
@@ -195,12 +233,11 @@ function App() {
               <div className="shutter-inner" />
             </button>
 
-            {/* Aesthetic Spacer Placeholder to balance flexbox */}
             <div className="control-btn-spacer" />
           </div>
         )}
 
-        {/* Interactive Visual Prompt Overlay */}
+        {/* Visual prompts */}
         {!hasFaces && videoElement && (
           <div className="visual-prompt glass-panel" style={{ bottom: '7.5rem' }}>
             <UserCheck className="animate-pulse text-amber-400" size={28} />
@@ -213,3 +250,4 @@ function App() {
 }
 
 export default App;
+
