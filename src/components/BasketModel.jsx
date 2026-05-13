@@ -1,154 +1,277 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Import assets
-import rocksImageUrl from '../assets/rocks_v3.png';
-
 // Landmarks lookup for placement
-const NOSE_TIP = 1;
 const FOREHEAD = 10;
 const LEFT_CHEEK = 234;
 const RIGHT_CHEEK = 454;
 const CHIN = 152;
 
-// 🧺 Ultra-Premium Procedural 3D Woven Basket Component
-// Replaces the static GLTF to create high-fidelity geometry with real shadows!
+// 🧺 Ultra-Premium Procedural 3D Woven Basket Component from HTML
 const ProceduralBasket = () => {
-  const ribCount = 32;
-  const ringCount = 8;
-  const height = 0.65;
-  const rBase = 0.75;
-  const rTop = 1.15;
+  const height = 0.85;
+  const rBase = 0.76;
+  const rTop = 1.05;
+  const ribCount = 36;
+  const ringCount = 9;
   
-  // Precompute geometry dimensions
   const slantHeight = Math.sqrt(height * height + Math.pow(rTop - rBase, 2));
   const tiltAngle = Math.atan2(rTop - rBase, height);
   const midRadius = (rBase + rTop) / 2;
 
-  // Premium Wood and Gold Materials
-  const woodMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#78350f'), // Warm mahogany
-    roughness: 0.6,
-    metalness: 0.25,
-    clearcoat: 0.3,
-    sheen: 1.0,
-    sheenColor: new THREE.Color('#f59e0b'), // Golden fibrous sheen
+  // Procedural materials mapped precisely from the HTML
+  const woodMat = useMemo(() => new THREE.MeshStandardMaterial({ 
+    color: '#8b5a2b', 
+    roughness: 0.55, 
+    metalness: 0.2 
   }), []);
 
-  const goldMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#eab308'), // Vibrant sunflower gold
-    roughness: 0.3,
-    metalness: 0.8,
-    clearcoat: 0.8,
-    clearcoatRoughness: 0.1,
+  const goldMat = useMemo(() => new THREE.MeshStandardMaterial({ 
+    color: '#e5b83c', 
+    roughness: 0.3, 
+    metalness: 0.75, 
+    emissive: '#442200', 
+    emissiveIntensity: 0.1 
   }), []);
 
-  const darkWoodMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#451a03'), // Deep dark wood
-    roughness: 0.85,
-    metalness: 0.1,
+  const darkWoodMat = useMemo(() => new THREE.MeshStandardMaterial({ 
+    color: '#5a3a1a', 
+    roughness: 0.8 
   }), []);
+
+  // Elegant spline-curve handle from HTML
+  const handleCurve = useMemo(() => new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.95, height - 0.05, 0.55),
+    new THREE.Vector3(0.45, height + 0.35, 0.85),
+    new THREE.Vector3(0, height + 0.52, 0.92),
+    new THREE.Vector3(-0.45, height + 0.35, 0.85),
+    new THREE.Vector3(-0.95, height - 0.05, 0.55)
+  ]), [height]);
+
+  // Generate 35 randomized interior pebbles
+  const pebbleData = useMemo(() => {
+    return Array.from({ length: 35 }).map(() => ({
+      pos: [
+        (Math.random() - 0.5) * 1.15,
+        0.1 + Math.random() * 0.3,
+        (Math.random() - 0.5) * 1.15
+      ],
+      rot: [Math.random() * Math.PI, Math.random() * Math.PI, 0],
+      scale: 0.03 + Math.random() * 0.02
+    }));
+  }, []);
 
   return (
-    <group>
-      {/* 1. Solid Circular Base */}
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[rBase - 0.02, rBase - 0.02, 0.04, 32]} />
-        <primitive object={darkWoodMat} attach="material" />
+    <group position={[0, -0.1, 0]}>
+      {/* 1. Solid Dark Wood Base */}
+      <mesh position={[0, 0.02, 0]} receiveShadow castShadow material={darkWoodMat}>
+        <cylinderGeometry args={[rBase - 0.02, rBase - 0.02, 0.06, 32]} />
       </mesh>
 
-      {/* 2. Geometric Vertical Woven Ribs (Slanted) */}
+      {/* 2. 36 Interweaving Ribs */}
       {Array.from({ length: ribCount }).map((_, i) => {
         const angle = (i / ribCount) * Math.PI * 2;
-        // Weave pattern: alternate offset to interlock with horizontal rings
-        const weaveOffset = (i % 2 === 0 ? 0.015 : -0.015);
         return (
-          <group key={`rib-${i}`} rotation={[0, angle, 0]}>
-            <mesh 
-              position={[0, height / 2, midRadius + weaveOffset]} 
-              rotation={[tiltAngle, 0, 0]} 
-              castShadow
-            >
-              <cylinderGeometry args={[0.025, 0.025, slantHeight, 8]} />
-              <primitive object={woodMat} attach="material" />
-            </mesh>
-          </group>
-        );
-      })}
-
-      {/* 3. Horizontal Gold Woven Rings */}
-      {Array.from({ length: ringCount }).map((_, i) => {
-        const fraction = i / (ringCount - 1);
-        const ringY = fraction * height;
-        const ringR = rBase + (rTop - rBase) * fraction;
-        // Alternating thickness for richer textured detail
-        const tubeSize = i % 2 === 0 ? 0.025 : 0.018;
-        return (
-          <mesh key={`ring-${i}`} position={[0, ringY, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-            <torusGeometry args={[ringR, tubeSize, 8, 48]} />
-            <primitive object={goldMat} attach="material" />
+          <mesh 
+            key={`rib-${i}`} 
+            position={[Math.cos(angle) * midRadius, height / 2, Math.sin(angle) * midRadius]} 
+            rotation={[tiltAngle * 0.7, 0, -angle]} // Converted to Z rotation offset
+            castShadow
+            material={woodMat}
+          >
+            <cylinderGeometry args={[0.028, 0.028, slantHeight, 6]} />
           </mesh>
         );
       })}
 
-      {/* 4. Luxurious Braided Rim */}
-      <mesh position={[0, height, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <torusGeometry args={[rTop, 0.06, 12, 64]} />
-        <primitive object={woodMat} attach="material" />
+      {/* 3. 9 Horizontal Rings (Wood/Gold alternation) */}
+      {Array.from({ length: ringCount }).map((_, i) => {
+        const t = i / (ringCount - 1);
+        const yPos = t * height;
+        const ringRad = rBase + (rTop - rBase) * t;
+        const isGold = (i % 3 === 1);
+        return (
+          <mesh 
+            key={`ring-${i}`} 
+            position={[0, yPos, 0]} 
+            rotation={[Math.PI / 2, 0, 0]} 
+            castShadow
+            material={isGold ? goldMat : woodMat}
+          >
+            <torusGeometry args={[ringRad, isGold ? 0.022 : 0.018, 24, 80]} />
+          </mesh>
+        );
+      })}
+
+      {/* 4. Luxurious Woven Rim */}
+      <mesh position={[0, height, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow material={woodMat}>
+        <torusGeometry args={[rTop, 0.055, 24, 96]} />
       </mesh>
-      <mesh position={[0, height + 0.03, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <torusGeometry args={[rTop - 0.01, 0.02, 8, 64]} />
-        <primitive object={goldMat} attach="material" />
+      <mesh position={[0, height + 0.025, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow material={goldMat}>
+        <torusGeometry args={[rTop - 0.02, 0.023, 16, 96]} />
       </mesh>
 
-      {/* 5. Hand-crafted Arched Top Handle */}
-      <mesh position={[0, height - 0.05, 0]} rotation={[0, 0, 0]} castShadow>
-        {/* Math.PI creates a perfect 180 degree arch overhead */}
-        <torusGeometry args={[rTop * 0.98, 0.045, 12, 64, Math.PI]} />
-        <primitive object={woodMat} attach="material" />
+      {/* 5. Elegant Curved Double-Handle */}
+      <mesh castShadow material={woodMat}>
+        <tubeGeometry args={[handleCurve, 28, 0.045, 10, false]} />
       </mesh>
-      {/* Braided secondary gold handle wrapping */}
-      <mesh position={[0, height - 0.02, 0]} rotation={[0.1, 0, 0]} castShadow>
-        <torusGeometry args={[rTop * 0.98, 0.02, 8, 64, Math.PI]} />
-        <primitive object={goldMat} attach="material" />
+      <mesh castShadow material={goldMat}>
+        <tubeGeometry args={[handleCurve, 28, 0.018, 8, false]} />
       </mesh>
+
+      {/* 6. Scatter of Interior Pebbles */}
+      {pebbleData.map((peb, i) => (
+        <mesh key={`peb-${i}`} position={peb.pos} rotation={peb.rot} castShadow>
+          <dodecahedronGeometry args={[peb.scale]} />
+          <meshStandardMaterial color="#9e8b72" roughness={0.6} />
+        </mesh>
+      ))}
     </group>
   );
 };
 
-const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
-  const groupRef = useRef();
+// 🪨 3D Dodecahedron Stone Stack with Floating Perspectived HTML Text Labels
+const StoneStack = () => {
+  const stonesData = [
+    { pos: [-0.08, 0.35, 0.2], scale: [0.65, 0.38, 0.6], color: '#9aa9b3', word: "WISDOM", rotY: 0.05 },
+    { pos: [0.48, 0.55, -0.12], scale: [0.58, 0.44, 0.52], color: '#b7aa87', word: "STRENGTH", rotY: -0.1 },
+    { pos: [-0.55, 0.5, -0.05], scale: [0.6, 0.42, 0.55], color: '#8f9b9f', word: "HARMONY", rotY: 0.12 },
+    { pos: [0.08, 0.82, 0.25], scale: [0.55, 0.36, 0.5], color: '#c3b59b', word: "PEACE", rotY: 0.0 },
+    { pos: [-0.25, 0.95, -0.25], scale: [0.48, 0.35, 0.44], color: '#9dadb5', word: "JOY", rotY: 0.08 },
+    { pos: [0.38, 0.92, -0.28], scale: [0.52, 0.38, 0.48], color: '#b5a57c', word: "GRACE", rotY: -0.05 }
+  ];
 
-  // OPTIMIZATION: Access live 3D viewport measurements to scale flawlessly on Mobile vs Desktop
+  return (
+    <group>
+      {/* Base foundation stone */}
+      <mesh position={[0, 0.18, 0.02]} scale={[0.9, 0.35, 0.9]} castShadow>
+        <dodecahedronGeometry args={[0.5]} />
+        <meshStandardMaterial color="#7c8a7c" roughness={0.7} />
+      </mesh>
+
+      {/* The Floating Pillars of Strength with styled labels */}
+      {stonesData.map((stone, i) => {
+        const yLabelOffset = stone.scale[1] * 0.6 + 0.12;
+        return (
+          <group key={`stone-${i}`} position={stone.pos} rotation={[0, stone.rotY, 0]}>
+            {/* The actual physical 3D Stone Mesh */}
+            <mesh scale={stone.scale} castShadow receiveShadow>
+              <dodecahedronGeometry args={[0.45]} />
+              <meshStandardMaterial color={stone.color} roughness={0.45} metalness={0.05} />
+            </mesh>
+
+            {/* HTML Label that behaves exactly like CSS2DRenderer but is fully responsive */}
+            <Html 
+              position={[0, yLabelOffset, 0.06]} 
+              center 
+              distanceFactor={4.5} 
+              zIndexRange={[10, 100]}
+            >
+              <div style={{
+                fontFamily: "'Georgia', 'Times New Roman', serif",
+                fontSize: "13px",
+                fontWeight: "800",
+                fontStyle: "italic",
+                color: "#f2e8cf",
+                textShadow: "1.5px 1.5px 0px #3a2a1f, 1px 1px 4px black",
+                letterSpacing: "2px",
+                background: "rgba(30, 20, 12, 0.72)",
+                padding: "4px 14px",
+                borderRadius: "40px",
+                borderLeft: "3px solid #e5b83c",
+                backdropFilter: "blur(4px)",
+                WebkitBackdropFilter: "blur(4px)",
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+                userSelect: "none",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
+              }}>
+                {stone.word}
+              </div>
+            </Html>
+          </group>
+        );
+      })}
+    </group>
+  );
+};
+
+// 🌟 Swirling Magical Particle Cloud Component
+const MagicalDust = () => {
+  const pointsRef = useRef();
+  const count = 400;
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 6;
+      pos[i * 3 + 1] = Math.random() * 2.8;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 5 - 0.5;
+    }
+    return pos;
+  }, []);
+
+  useFrame((state) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y = state.clock.elapsedTime * 0.08;
+    }
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute 
+          attach="attributes-position" 
+          count={count} 
+          array={positions} 
+          itemSize={3} 
+        />
+      </bufferGeometry>
+      <pointsMaterial 
+        color="#dbbc87" 
+        size={0.025} 
+        transparent 
+        opacity={0.45} 
+        sizeAttenuation 
+      />
+    </points>
+  );
+};
+
+// 🚀 Main Exported Face Tracking Basket Model
+const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
+  const groupRef = useRef();
+  const glowRef = useRef();
+  const spotRef = useRef();
+  
   const { viewport } = useThree();
 
-  // Load the rocks picture as a texture to display inside the basket
-  const rocksTexture = useTexture(rocksImageUrl);
-
-  // OPTIMIZATION: Limit execution rate to match throttled detection inputs
-  useFrame(() => {
-    if (!faceDataRef.current || !groupRef.current) return;
+  useFrame((state) => {
+    if (!faceDataRef?.current || !groupRef.current) return;
 
     const faceLandmarks = faceDataRef.current[faceIndex];
 
-    if (!faceLandmarks || !groupRef.current) {
-      // Gradually hide/fade out or lower the basket when no face is detected
-      groupRef.current.visible = THREE.MathUtils.lerp(
-        groupRef.current.visible ? 1 : 0,
-        0,
-        0.1
-      ) > 0.05;
+    if (!faceLandmarks) {
+      // Fade out gently if no face is visible
+      groupRef.current.visible = THREE.MathUtils.lerp(groupRef.current.visible ? 1 : 0, 0, 0.1) > 0.05;
       return;
     }
 
     groupRef.current.visible = true;
 
-    // 1. Fetch key face landmarks with MIRRORED CORRECTION (conditional on facingMode)
-    // Because the CameraFeed mirrors "user" camera via CSS, we MUST flip the X-coordinates
-    // ONLY for front camera. Rear camera (environment) uses standard coordinates.
-    const getMirrored = (idx) => {
+    // Pulse the interior point lights from HTML
+    const time = state.clock.elapsedTime;
+    if (glowRef.current) {
+      glowRef.current.intensity = 1.2 + Math.sin(time * 3.5) * 0.3;
+    }
+    if (spotRef.current) {
+      spotRef.current.intensity = 0.9 + Math.sin(time * 2.0) * 0.15;
+    }
+
+    // Fetch landmarks with frontend camera correction
+    const getPoint = (idx) => {
       const pt = faceLandmarks[idx];
       if (!pt) return { x: 0.5, y: 0.5, z: 0 };
       return {
@@ -158,130 +281,107 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
       };
     };
 
-    const pLeft = getMirrored(LEFT_CHEEK);
-    const pRight = getMirrored(RIGHT_CHEEK);
-    const pForehead = getMirrored(FOREHEAD);
-    const pChin = getMirrored(CHIN);
+    const pLeft = getPoint(LEFT_CHEEK);
+    const pRight = getPoint(RIGHT_CHEEK);
+    const pForehead = getPoint(FOREHEAD);
+    const pChin = getPoint(CHIN);
 
-    // 2. Calculate face dimensions for DYNAMIC AUTO-ADJUSTMENT scaling
-    // This ensures the basket gets larger/smaller as the user moves closer/further from camera.
-    const faceWidth3D = Math.sqrt(
+    // Compute dimensional vectors
+    const faceWidth = Math.sqrt(
       Math.pow(pRight.x - pLeft.x, 2) +
       Math.pow(pRight.y - pLeft.y, 2) +
       Math.pow(pRight.z - pLeft.z, 2)
     );
 
-    const faceHeight3D = Math.sqrt(
+    const faceHeight = Math.sqrt(
       Math.pow(pForehead.x - pChin.x, 2) +
       Math.pow(pForehead.y - pChin.y, 2) +
       Math.pow(pForehead.z - pChin.z, 2)
     );
 
-    // 3. Calculate Local Basis Vectors of the Face (for accurate 3D orientation)
-    // Vector going RIGHT across the face
+    // Build local basis matrix
     const vRight = new THREE.Vector3(
       pRight.x - pLeft.x,
-      -(pRight.y - pLeft.y), // Invert Y because landmarks Y is down, ThreeJS is up
+      -(pRight.y - pLeft.y),
       pRight.z - pLeft.z
     ).normalize();
 
-    // Vector going UP along the face
-    const vUp = new THREE.Vector3(
+    const vUpRaw = new THREE.Vector3(
       pForehead.x - pChin.x,
       -(pForehead.y - pChin.y),
       pForehead.z - pChin.z
     ).normalize();
 
-    // Vector going FORWARD out of the face
-    const vForward = new THREE.Vector3().crossVectors(vRight, vUp).normalize();
+    const vForward = new THREE.Vector3().crossVectors(vRight, vUpRaw).normalize();
+    const vUp = new THREE.Vector3().crossVectors(vForward, vRight).normalize();
 
-    // Re-orthogonalize Up vector to ensure perfectly square rotation matrix
-    vUp.crossVectors(vForward, vRight).normalize();
+    // Mapping coordinates dynamically to Viewport
+    const x = (pForehead.x - 0.5) * viewport.width;
+    const y = -(pForehead.y - 0.5) * viewport.height;
+    const z = pForehead.z * -12;
 
-    // 4. Calculate Position mapped dynamically to 3D Viewport Bounds
-    // Using live viewport dimensions automatically calibrates tracking boundaries
-    // for vertical phone aspect ratios versus landscape desktop screens!
-    const baseWidthScale = viewport.width;
-    const baseHeightScale = viewport.height;
+    const headPos = new THREE.Vector3(x, y, z);
+    const upwardOffset = faceHeight * (viewport.height * 0.22); 
+    const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
-    const rawForeheadX = (pForehead.x - 0.5) * baseWidthScale;
-    const rawForeheadY = -(pForehead.y - 0.5) * baseHeightScale;
-    const rawForeheadZ = pForehead.z * -12; // Map depth values
-
-    // Base group position at forehead
-    const headPosition = new THREE.Vector3(rawForeheadX, rawForeheadY, rawForeheadZ);
-
-    // AUTO-ADJUST OFFSET: 
-    // Calibrate upward projection to scale linearly with screen height (viewport.height)
-    // to prevent it from flying too high up on tall vertical mobile screens!
-    // ⚡ TUNED: Reduced from 0.27 to 0.20 to lower the basket snugly onto the user's head!
-    const upwardOffset = faceHeight3D * (viewport.height * 0.20);
-    const targetPosition = headPosition.clone().addScaledVector(vUp, upwardOffset);
-
-    // 5. Apply Dynamic Viewport Scaling
-    // Reduces base coefficient proportionally to horizontal viewport width, 
-    // resolving the 'giant basket' bug on narrow portrait phone devices.
-    const baseBasketScale = viewport.width * 0.50;
-    const targetScaleFactor = faceWidth3D * baseBasketScale;
+    // Scaling
+    const baseScale = viewport.width * 0.45; 
+    const targetScaleFactor = faceWidth * baseScale;
     const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
 
-    // 6. Smoothly Interpolate Position, Rotation, and Scale (Lerping)
-    // Dampens high frequency webcam noise
+    // Smooth movement lerping
     const damping = 0.25;
-    groupRef.current.position.lerp(targetPosition, damping);
+    groupRef.current.position.lerp(targetPos, damping);
     groupRef.current.scale.lerp(targetScale, damping);
 
-    // Construct Target Quaternion (Rotation) directly from local face vectors
-    const rotationMatrix = new THREE.Matrix4();
-    rotationMatrix.makeBasis(vRight, vUp, vForward);
-
-    const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(rotationMatrix);
-    groupRef.current.quaternion.slerp(targetQuaternion, damping);
-
+    // Create quaternion rotation
+    const rotMat = new THREE.Matrix4();
+    rotMat.makeBasis(vRight, vUp, vForward);
+    const targetQuat = new THREE.Quaternion().setFromRotationMatrix(rotMat);
+    groupRef.current.quaternion.slerp(targetQuat, damping);
   });
 
   return (
     <group ref={groupRef} dispose={null}>
-      {/* 🧺 Realistic Procedural Woven Basket */}
+      {/* 1. 🧺 Woven Procedural Basket */}
       <ProceduralBasket />
 
-      {/* 🪨 Realistic 3D Rock Stack placed inside the Basket */}
-      {/* ⚡ LIGHTING & TEXTURE OVERHAUL: Renders with bump-mapped depth, casts shadows, and balances correctly */}
-      <mesh 
-        position={[0, 0.75, 0.1]} 
-        rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 12), isFrontCamera ? Math.PI : 0, 0]}
-        castShadow
-        receiveShadow
-      >
-        {/* Aspect ratio perfectly calibrated for 4 text-bearing rocks */}
-        <planeGeometry args={[1.2, 1.45]} />
-        <meshStandardMaterial
-          map={rocksTexture}
-          bumpMap={rocksTexture} // ⚡ RENDER TRICK: Convert luminance to depth map for real stone crags!
-          bumpScale={0.06} // Strong depth without distortion
-          transparent={true}
-          roughness={0.85} // Matte stony surface
-          metalness={0.05} // Non-metallic
-          side={THREE.FrontSide} // Optimized rendering
-          alphaTest={0.25} // Crisp shadows and seamless blending
-        />
-      </mesh>
+      {/* 2. 🪨 Floating Stone Stack with Perspectived Styled HTML Text */}
+      <StoneStack />
 
-      {/* 💡 Dynamic internal lighting to illuminate the stone engravings and basket interior */}
-      <pointLight color="#fbbf24" intensity={4.0} distance={5} position={[0, 0.35, 0.3]} castShadow />
+      {/* 3. 🌟 Magical Particle Cloud */}
+      <MagicalDust />
+
+      {/* 4. 💡 Dynamic Inner Illumination & Accent Lights */}
+      <ambientLight intensity={0.55} color="#404060" />
       
-      {/* ✨ Specialized Spotlight pointing at the stones to emphasize their 3D bump textures */}
-      <directionalLight 
-        color="#ffffff" 
-        intensity={2.5} 
-        position={[0, 4, 3]} 
+      {/* Inner glowing PointLight from HTML */}
+      <pointLight 
+        ref={glowRef}
+        color="#f59e0b" 
+        intensity={1.5} 
+        distance={4} 
+        position={[0, 0.6, 0.3]} 
         castShadow 
+      />
+
+      {/* Dramatic Spotlight for stone texturing from HTML */}
+      <spotLight 
+        ref={spotRef}
+        color="#ffdd99" 
+        intensity={0.9} 
+        position={[0, 3.2, 0.8]} 
+        castShadow 
+      />
+      
+      {/* Subtle cold rim light from HTML */}
+      <pointLight 
+        color="#88aaff" 
+        intensity={0.5} 
+        position={[-1.2, 2.5, -2]} 
       />
     </group>
   );
 };
-
-// Preload assets
-useTexture.preload(rocksImageUrl);
 
 export default BasketModel;
