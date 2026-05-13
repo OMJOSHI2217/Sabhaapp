@@ -1,11 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, useTexture } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Import the GLB model directly as a static URL asset using Vite's ?url query
 import basketModelUrl from '../models/basket.glb?url';
-import heroImageUrl from '../assets/hero.png';
 
 // Landmarks lookup for placement
 const NOSE_TIP = 1;
@@ -22,9 +21,6 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
   
   // Use R3F GLTF loader to load our generated basket
   const { scene, materials } = useGLTF(basketModelUrl);
-
-  // Load the target picture as a texture to display inside the basket
-  const pictureTexture = useTexture(heroImageUrl);
 
   // Clone the scene to avoid shared state issues and customize materials
   const clonedScene = React.useMemo(() => scene.clone(), [scene]);
@@ -174,17 +170,6 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
       {/* Main imported GLB mesh */}
       <primitive object={clonedScene} />
       
-      {/* 🖼️ Floating 3D Picture emerging from the Basket cavity */}
-      <mesh position={[0, 0.6, 0]} rotation={[-Math.PI / 16, 0, 0]}>
-        <planeGeometry args={[0.9, 0.9]} />
-        <meshBasicMaterial 
-          map={pictureTexture} 
-          transparent={true} 
-          depthWrite={false} 
-          side={THREE.DoubleSide} 
-        />
-      </mesh>
-      
       {/* Add a natural localized ambient light inside the basket for gentle illumination */}
       <pointLight color="#f59e0b" intensity={1.2} distance={4} position={[0, 0.3, 0]} />
     </group>
@@ -193,6 +178,5 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
 
 // Preload assets
 useGLTF.preload(basketModelUrl);
-useTexture.preload(heroImageUrl);
 
 export default BasketModel;
