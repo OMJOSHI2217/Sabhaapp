@@ -588,7 +588,9 @@
     border-radius: 1.25rem !important;
     gap: 0.5rem !important;
     background: rgba(10, 10, 10, 0.92) !important;
-    max-height: 65%; /* Shrunk to avoid control collision */
+    max-height: 55% !important; /* 🔒 HEIGHT LOCK: Prevents container from ever covering camera controls! */
+    overflow-y: auto !important; /* 📜 FORCE SCROLLBAR: Generates scroll-view if items overflow */
+    -webkit-overflow-scrolling: touch !important; /* 🚀 SMOOTH SCROLL: Enables native iOS momentum touch scrolling */
   }
 
   .md-header {
@@ -644,7 +646,7 @@
 /* 📏 SHORT SCREENS VERTICAL ADJUSTMENT */
 @media (max-height: 680px) {
   .milestones-dashboard-outer {
-    max-height: 62% !important; /* Dynamically shrinks scrollable area to prevent spilling */
+    max-height: 48% !important; /* 🛡️ Ultra tight safety cap for older/shorter vertical devices */
   }
   .camera-controls {
     bottom: 1rem !important;
