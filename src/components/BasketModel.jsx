@@ -1,10 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, useTexture } from '@react-three/drei';
+import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Import the GLB model directly as a static URL asset using Vite's ?url query
-import basketModelUrl from '../models/basket.glb?url';
+// Import assets
 import rocksImageUrl from '../assets/rocks_v2.png';
 
 // Landmarks lookup for placement
@@ -14,47 +13,119 @@ const LEFT_CHEEK = 234;
 const RIGHT_CHEEK = 454;
 const CHIN = 152;
 
+// 🧺 Ultra-Premium Procedural 3D Woven Basket Component
+// Replaces the static GLTF to create high-fidelity geometry with real shadows!
+const ProceduralBasket = () => {
+  const ribCount = 32;
+  const ringCount = 8;
+  const height = 0.65;
+  const rBase = 0.75;
+  const rTop = 1.15;
+  
+  // Precompute geometry dimensions
+  const slantHeight = Math.sqrt(height * height + Math.pow(rTop - rBase, 2));
+  const tiltAngle = Math.atan2(rTop - rBase, height);
+  const midRadius = (rBase + rTop) / 2;
+
+  // Premium Wood and Gold Materials
+  const woodMat = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color('#78350f'), // Warm mahogany
+    roughness: 0.6,
+    metalness: 0.25,
+    clearcoat: 0.3,
+    sheen: 1.0,
+    sheenColor: new THREE.Color('#f59e0b'), // Golden fibrous sheen
+  }), []);
+
+  const goldMat = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color('#eab308'), // Vibrant sunflower gold
+    roughness: 0.3,
+    metalness: 0.8,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.1,
+  }), []);
+
+  const darkWoodMat = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color('#451a03'), // Deep dark wood
+    roughness: 0.85,
+    metalness: 0.1,
+  }), []);
+
+  return (
+    <group>
+      {/* 1. Solid Circular Base */}
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[rBase - 0.02, rBase - 0.02, 0.04, 32]} />
+        <primitive object={darkWoodMat} attach="material" />
+      </mesh>
+
+      {/* 2. Geometric Vertical Woven Ribs (Slanted) */}
+      {Array.from({ length: ribCount }).map((_, i) => {
+        const angle = (i / ribCount) * Math.PI * 2;
+        // Weave pattern: alternate offset to interlock with horizontal rings
+        const weaveOffset = (i % 2 === 0 ? 0.015 : -0.015);
+        return (
+          <group key={`rib-${i}`} rotation={[0, angle, 0]}>
+            <mesh 
+              position={[0, height / 2, midRadius + weaveOffset]} 
+              rotation={[tiltAngle, 0, 0]} 
+              castShadow
+            >
+              <cylinderGeometry args={[0.025, 0.025, slantHeight, 8]} />
+              <primitive object={woodMat} attach="material" />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* 3. Horizontal Gold Woven Rings */}
+      {Array.from({ length: ringCount }).map((_, i) => {
+        const fraction = i / (ringCount - 1);
+        const ringY = fraction * height;
+        const ringR = rBase + (rTop - rBase) * fraction;
+        // Alternating thickness for richer textured detail
+        const tubeSize = i % 2 === 0 ? 0.025 : 0.018;
+        return (
+          <mesh key={`ring-${i}`} position={[0, ringY, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <torusGeometry args={[ringR, tubeSize, 8, 48]} />
+            <primitive object={goldMat} attach="material" />
+          </mesh>
+        );
+      })}
+
+      {/* 4. Luxurious Braided Rim */}
+      <mesh position={[0, height, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[rTop, 0.06, 12, 64]} />
+        <primitive object={woodMat} attach="material" />
+      </mesh>
+      <mesh position={[0, height + 0.03, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[rTop - 0.01, 0.02, 8, 64]} />
+        <primitive object={goldMat} attach="material" />
+      </mesh>
+
+      {/* 5. Hand-crafted Arched Top Handle */}
+      <mesh position={[0, height - 0.05, 0]} rotation={[0, 0, 0]} castShadow>
+        {/* Math.PI creates a perfect 180 degree arch overhead */}
+        <torusGeometry args={[rTop * 0.98, 0.045, 12, 64, Math.PI]} />
+        <primitive object={woodMat} attach="material" />
+      </mesh>
+      {/* Braided secondary gold handle wrapping */}
+      <mesh position={[0, height - 0.02, 0]} rotation={[0.1, 0, 0]} castShadow>
+        <torusGeometry args={[rTop * 0.98, 0.02, 8, 64, Math.PI]} />
+        <primitive object={goldMat} attach="material" />
+      </mesh>
+    </group>
+  );
+};
+
 const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
   const groupRef = useRef();
 
   // OPTIMIZATION: Access live 3D viewport measurements to scale flawlessly on Mobile vs Desktop
   const { viewport } = useThree();
 
-  // Use R3F GLTF loader to load our generated basket
-  const { scene, materials } = useGLTF(basketModelUrl);
-
   // Load the rocks picture as a texture to display inside the basket
   const rocksTexture = useTexture(rocksImageUrl);
-
-  // Clone the scene to avoid shared state issues and customize materials
-  const clonedScene = React.useMemo(() => scene.clone(), [scene]);
-
-  useEffect(() => {
-    // Style the basket to look ultra-modern and premium
-    clonedScene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-
-        // ✨ NEW DESIGN: Luxurious Golden Wicker / Polished Bronze look
-        child.material = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#92400e'), // Rich amber-bronze base
-          roughness: 0.6, // Textured, not overly glossy
-          metalness: 0.4, // Elegant metallic sheen
-          clearcoat: 0.4, // Protective varnish coating
-          clearcoatRoughness: 0.3,
-          sheen: 1.0, // Velvet/fibrous micro-sheen for wicker-like texture
-          sheenColor: new THREE.Color('#f59e0b'), // Golden highlights
-          thickness: 0.5
-        });
-      }
-    });
-
-    // VISUAL TILT ADJUSTMENT:
-    // Tilt the entire basket forward slightly (15 degrees) so users look INTO the basket 
-    // rather than underneath it, making the Cavity clearly visible!
-    clonedScene.rotation.x = Math.PI / 12;
-  }, [clonedScene]);
 
   // OPTIMIZATION: Limit execution rate to match throttled detection inputs
   useFrame(() => {
@@ -171,8 +242,8 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
 
   return (
     <group ref={groupRef} dispose={null}>
-      {/* Main imported GLB mesh */}
-      <primitive object={clonedScene} />
+      {/* 🧺 Realistic Procedural Woven Basket */}
+      <ProceduralBasket />
 
       {/* 🪨 Realistic 3D Rock Stack placed inside the Basket */}
       {/* ⚡ LIGHTING & TEXTURE OVERHAUL: Renders with bump-mapped depth, casts shadows, and balances correctly */}
@@ -211,7 +282,6 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
 };
 
 // Preload assets
-useGLTF.preload(basketModelUrl);
 useTexture.preload(rocksImageUrl);
 
 export default BasketModel;
