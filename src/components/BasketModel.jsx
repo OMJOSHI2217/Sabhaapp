@@ -79,7 +79,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   // 🎨 COLOR CALIBRATION
   useMemo(() => {
     const allTex = [
-      texStoneBasket, texAdmission, texExam, texIncrement, 
+      texStoneBasket, texAdmission, texExam, texIncrement,
       texInterview, texResults, texStudentCareer, texWife
     ];
     allTex.forEach(t => {
@@ -134,10 +134,10 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const getPoint = (idx) => {
       const pt = faceLandmarks[idx];
       if (!pt) return { x: 0.5, y: 0.5, z: 0 };
-      
+
       let rawX = isFrontCamera ? 1.0 - pt.x : pt.x;
       let rawY = pt.y;
-      
+
       let correctedX = rawX;
       let correctedY = rawY;
 
@@ -193,17 +193,17 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const z = pForehead.z * -11.5;
 
     const headPos = new THREE.Vector3(x, y, z);
-    const upwardOffset = faceHeight * (viewport.height * 0.18); 
+    const upwardOffset = faceHeight * (viewport.height * 0.18);
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
     const damping = 0.25;
     groupRef.current.position.lerp(targetPos, damping);
-    
+
     // 🚀 HIGH FIDELITY MULTIPLIER: Enabled by aspect calibration, size scales perfectly and huge by default!
-    const baseScale = viewport.width * 0.78; 
+    const baseScale = viewport.width * 0.78;
     const targetScaleFactor = faceWidth * baseScale;
     const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
-    
+
     groupRef.current.scale.lerp(targetScale, damping);
 
     const rotMat = new THREE.Matrix4();
@@ -214,19 +214,19 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
   return (
     <group ref={groupRef} dispose={null}>
-      
+
       {/* 1. 🧺 Enlarged Fixed Size Custom Image-Based Basket */}
       <group ref={basketRef}>
-        <mesh 
+        <mesh
           rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 24), isFrontCamera ? Math.PI : 0, 0]}
-          position={[0, 0.05, 0.0]} 
-          castShadow 
+          position={[0, 0.05, 0.0]}
+          castShadow
           receiveShadow
         >
           {/* 🚀 ENLARGED GEOMETRY: Widened base size to 2.65 to guarantee huge presence on screen! */}
           <planeGeometry args={[2.65, 1.76]} />
           {/* 🌈 PERFECT 1:1 COLOR UPGRADE */}
-          <meshBasicMaterial 
+          <meshBasicMaterial
             map={texStoneBasket}
             transparent={true}
             alphaTest={0.15}
@@ -247,17 +247,17 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
         ) : (
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
-            
+
             // Increased the step slightly from 0.60 to 0.66 to reach the absolute perfect visual gap!
             const yPos = 0.72 + index * 0.66;
-            
+
             const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
-            const zOffset = 0.15 + (index * 0.015); 
+            const zOffset = 0.15 + (index * 0.015);
             const zRot = (index % 2 === 0 ? -0.035 : 0.035);
             const xRot = (isFrontCamera ? 1 : -1) * (Math.PI / 14);
 
             return (
-              <mesh 
+              <mesh
                 key={item.id}
                 position={[xOffset, yPos, zOffset]}
                 rotation={[xRot, isFrontCamera ? Math.PI : 0, zRot]}
@@ -266,7 +266,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
               >
                 {/* 🚀 ENLARGED STONE GEOMETRY: Upscaled to 2.3 to fit fully across the expanded 2.65 wide basket! */}
                 <planeGeometry args={[2.3, 1.53]} />
-                <meshBasicMaterial 
+                <meshBasicMaterial
                   map={texture}
                   transparent={true}
                   alphaTest={0.15}
@@ -281,7 +281,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
       {/* 3. 🌟 Particle Atmosphere */}
       <MagicalDust />
-      
+
     </group>
   );
 };

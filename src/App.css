@@ -418,6 +418,8 @@
   right: 1.75rem;
   transform: translateY(-50%);
   width: 210px;
+  max-height: 82%; /* 🛡️ VERTICAL OVERFLOW PROTECTION: Prevents clipping off short screens */
+  overflow-y: auto; /* 📜 AUTO-SCROLL: Seamless internal scrolling on tiny windows */
   z-index: 100;
   background: rgba(15, 15, 15, 0.88);
   backdrop-filter: blur(16px);
@@ -432,7 +434,22 @@
   gap: 0.85rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   user-select: none;
-  transition: border-color 0.3s ease, right 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Sleek, premium scrollbar styling for dashboard */
+.milestones-dashboard-outer::-webkit-scrollbar {
+  width: 4px;
+}
+.milestones-dashboard-outer::-webkit-scrollbar-track {
+  background: transparent;
+}
+.milestones-dashboard-outer::-webkit-scrollbar-thumb {
+  background: rgba(234, 179, 8, 0.3);
+  border-radius: 10px;
+}
+.milestones-dashboard-outer::-webkit-scrollbar-thumb:hover {
+  background: rgba(234, 179, 8, 0.5);
 }
 
 .milestones-dashboard-outer:hover {
@@ -464,7 +481,7 @@
 
 .md-checkbox-row {
   display: flex;
-  flex-direction: column; /* Stack vertically! */
+  flex-direction: column;
   gap: 0.5rem;
   align-items: stretch;
 }
@@ -504,9 +521,45 @@
   margin: 0;
 }
 
-/* 📱 PERFECT MOBILE RESPONSIVENESS OVERRIDES */
-@media (max-width: 640px) {
-  /* 1. Viewport Upgrade: native immersive edge-to-edge AR viewport */
+/* ==========================================
+   🎨 HIGH-FIDELITY RESPONSIVE BREAKPOINTS
+   ========================================== */
+
+/* 💻 MEDIUM DESKTOPS & LAPTOPS (<= 1200px) */
+@media (max-width: 1200px) {
+  .game-viewport {
+    width: 88vw;
+    height: 75vh;
+  }
+  .milestones-dashboard-outer {
+    right: 1.25rem;
+    width: 190px;
+    padding: 1rem;
+  }
+  .md-item {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.72rem;
+  }
+}
+
+/* 📟 TABLETS & COMPACT SCREENS (<= 960px) */
+@media (max-width: 960px) {
+  .hud-container {
+    left: 1.5rem;
+    right: 1.5rem;
+  }
+  .hud-item {
+    padding: 0.4rem 0.8rem !important;
+  }
+  .hud-value {
+    font-size: 1rem !important;
+  }
+}
+
+/* 📱 IMMERSIVE NATIVE AR VIEWPORT THRESHOLD (<= 820px) 
+   Turns on edge-to-edge views for all smartphones and portrait Tablets like iPads! */
+@media (max-width: 820px) {
+  /* Native Edge-to-Edge layout */
   .game-viewport {
     width: 100vw !important;
     height: 100vh !important;
@@ -521,50 +574,43 @@
     padding: 0 !important;
   }
 
-  /* 2. Header Overlay Adjustments */
   .hud-container {
-    display: none; 
+    top: max(1rem, env(safe-area-inset-top));
+    display: none; /* Cleaner viewport without overlapping info */
   }
 
-  /* 3. Mobile Right-Pinned Vertical Sidebar */
+  /* Right-Pinned Compact Sidebar Adaptive Positioning */
   .milestones-dashboard-outer {
-    top: 45% !important; /* Positioned for easy right-hand thumb access */
+    top: 45% !important;
     right: 0.75rem !important;
-    transform: translateY(-50%) !important;
-    left: auto !important;
     width: 165px !important;
     padding: 0.85rem 0.65rem !important;
-    gap: 0.5rem !important;
     border-radius: 1.25rem !important;
+    gap: 0.5rem !important;
     background: rgba(10, 10, 10, 0.92) !important;
+    max-height: 65%; /* Shrunk to avoid control collision */
   }
 
   .md-header {
-    font-size: 0.7rem !important;
+    font-size: 0.72rem !important;
     padding-bottom: 0.4rem !important;
   }
 
   .md-checkbox-row {
-    flex-direction: column !important; /* Stays strictly vertical on mobile too! */
-    flex-wrap: nowrap !important;
-    overflow-x: visible !important;
     gap: 0.45rem !important;
-    padding-bottom: 0 !important;
   }
 
   .md-item {
-    flex-shrink: 0 !important;
-    white-space: nowrap;
-    padding: 0.45rem 0.55rem !important;
+    padding: 0.4rem 0.5rem !important;
     font-size: 0.68rem !important;
     border-radius: 0.6rem !important;
   }
 
   .md-footer-text {
-    display: none !important; /* Hide footer text on mobile to save precious vertical real-estate */
+    display: none !important; /* Clear clutter for safe viewport room */
   }
 
-  /* 4. Safe-zone positioning for Bottom Controllers */
+  /* Position controls with proper safety buffers */
   .camera-controls {
     bottom: calc(1.5rem + env(safe-area-inset-bottom, 15px)) !important;
   }
@@ -573,6 +619,41 @@
     bottom: calc(7.5rem + env(safe-area-inset-bottom, 15px)) !important;
   }
 }
+
+/* 📱 ULTRA COMPACT SMARTPHONES (<= 420px) */
+@media (max-width: 420px) {
+  .milestones-dashboard-outer {
+    width: 145px !important;
+    right: 0.5rem !important;
+    padding: 0.75rem 0.55rem !important;
+    top: 42% !important;
+  }
+
+  .md-item {
+    font-size: 0.64rem !important;
+    padding: 0.35rem 0.45rem !important;
+    gap: 0.4rem !important;
+  }
+
+  .md-checkbox-input {
+    width: 0.85rem !important;
+    height: 0.85rem !important;
+  }
+}
+
+/* 📏 SHORT SCREENS VERTICAL ADJUSTMENT */
+@media (max-height: 680px) {
+  .milestones-dashboard-outer {
+    max-height: 62% !important; /* Dynamically shrinks scrollable area to prevent spilling */
+  }
+  .camera-controls {
+    bottom: 1rem !important;
+  }
+  .visual-prompt {
+    bottom: 6rem !important;
+  }
+}
+
 
 
 
