@@ -14,10 +14,15 @@ const MILESTONES = [
   { id: "Student Career", label: "🎓 Student Career" },
   { id: "Admission", label: "📝 Admission" },
   { id: "Exam", label: "✍️ Exam" },
+  { id: "FInal Viva", label: "🗣️ Final Viva" },
   { id: "Results", label: "🏆 Results" },
   { id: "Interview", label: "👔 Interview" },
+  { id: "JOB", label: "💼 Job" },
   { id: "Increment", label: "💰 Increment" },
-  { id: "Wife", label: "❤️ Wife" }
+  { id: "Boss", label: "🧑‍💼 Boss" },
+  { id: "Wife", label: "❤️ Wife" },
+  { id: "Weight", label: "⚖️ Weight" },
+  { id: "Sabha", label: "🕌 Sabha" }
 ];
 
 function App() {
@@ -42,10 +47,15 @@ function App() {
     "Student Career": true,
     "Admission": false,
     "Exam": false,
+    "FInal Viva": false,
     "Results": false,
     "Interview": false,
+    "JOB": false,
     "Increment": false,
+    "Boss": false,
     "Wife": false,
+    "Weight": false,
+    "Sabha": false,
   });
 
   const toggleItem = (id) => {

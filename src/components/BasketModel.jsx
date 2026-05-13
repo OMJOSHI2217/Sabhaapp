@@ -4,14 +4,19 @@ import { Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Import custom images
-import imgStoneBasket from '../images/basket.png';
+import imgStoneBasket from '../images/image_basket.png';
+import imgStudentCareer from '../images/Student Career.png';
 import imgAdmission from '../images/Admission.png';
 import imgExam from '../images/Exam.png';
-import imgIncrement from '../images/Increment.png';
-import imgInterview from '../images/Interview.png';
+import imgFinalViva from '../images/FInal Viva.png';
 import imgResults from '../images/Final Results.png';
-import imgStudentCareer from '../images/Student Career.png';
+import imgInterview from '../images/Interview.png';
+import imgJob from '../images/JOB.png';
+import imgIncrement from '../images/Increment.png';
+import imgBoss from '../images/Boss.png';
 import imgWife from '../images/Wife.png';
+import imgWeight from '../images/Weight.png';
+import imgSabha from '../images/Sabha.png';
 
 // Landmarks lookup
 const FOREHEAD = 10;
@@ -23,10 +28,15 @@ const MILESTONES = [
   { id: "Student Career", label: "🎓 Student Career", img: imgStudentCareer },
   { id: "Admission", label: "📝 Admission", img: imgAdmission },
   { id: "Exam", label: "✍️ Exam", img: imgExam },
+  { id: "FInal Viva", label: "🗣️ Final Viva", img: imgFinalViva },
   { id: "Results", label: "🏆 Results", img: imgResults },
   { id: "Interview", label: "👔 Interview", img: imgInterview },
+  { id: "JOB", label: "💼 Job", img: imgJob },
   { id: "Increment", label: "💰 Increment", img: imgIncrement },
-  { id: "Wife", label: "❤️ Wife", img: imgWife }
+  { id: "Boss", label: "🧑‍💼 Boss", img: imgBoss },
+  { id: "Wife", label: "❤️ Wife", img: imgWife },
+  { id: "Weight", label: "⚖️ Weight", img: imgWeight },
+  { id: "Sabha", label: "🕌 Sabha", img: imgSabha }
 ];
 
 // 🌟 Floating Stardust Effect
@@ -68,19 +78,25 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
   // Load dynamic textures
   const texStoneBasket = useTexture(imgStoneBasket);
+  const texStudentCareer = useTexture(imgStudentCareer);
   const texAdmission = useTexture(imgAdmission);
   const texExam = useTexture(imgExam);
-  const texIncrement = useTexture(imgIncrement);
-  const texInterview = useTexture(imgInterview);
+  const texFinalViva = useTexture(imgFinalViva);
   const texResults = useTexture(imgResults);
-  const texStudentCareer = useTexture(imgStudentCareer);
+  const texInterview = useTexture(imgInterview);
+  const texJob = useTexture(imgJob);
+  const texIncrement = useTexture(imgIncrement);
+  const texBoss = useTexture(imgBoss);
   const texWife = useTexture(imgWife);
+  const texWeight = useTexture(imgWeight);
+  const texSabha = useTexture(imgSabha);
 
   // 🎨 COLOR CALIBRATION
   useMemo(() => {
     const allTex = [
-      texStoneBasket, texAdmission, texExam, texIncrement,
-      texInterview, texResults, texStudentCareer, texWife
+      texStoneBasket, texStudentCareer, texAdmission, texExam,
+      texFinalViva, texResults, texInterview, texJob,
+      texIncrement, texBoss, texWife, texWeight, texSabha
     ];
     allTex.forEach(t => {
       if (t) {
@@ -88,17 +104,29 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
         t.needsUpdate = true;
       }
     });
-  }, [texStoneBasket, texAdmission, texExam, texIncrement, texInterview, texResults, texStudentCareer, texWife]);
+  }, [
+    texStoneBasket, texStudentCareer, texAdmission, texExam,
+    texFinalViva, texResults, texInterview, texJob,
+    texIncrement, texBoss, texWife, texWeight, texSabha
+  ]);
 
   const textures = useMemo(() => ({
     "Student Career": texStudentCareer,
     "Admission": texAdmission,
     "Exam": texExam,
+    "FInal Viva": texFinalViva,
     "Results": texResults,
     "Interview": texInterview,
+    "JOB": texJob,
     "Increment": texIncrement,
+    "Boss": texBoss,
     "Wife": texWife,
-  }), [texStudentCareer, texAdmission, texExam, texResults, texInterview, texIncrement, texWife]);
+    "Weight": texWeight,
+    "Sabha": texSabha,
+  }), [
+    texStudentCareer, texAdmission, texExam, texFinalViva, texResults,
+    texInterview, texJob, texIncrement, texBoss, texWife, texWeight, texSabha
+  ]);
 
   const activeItems = selectedItems || { "Student Career": true };
 
