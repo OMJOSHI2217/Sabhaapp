@@ -153,16 +153,11 @@ function App() {
             <Suspense fallback={null}>
               <Environment preset="city" />
               
-              {/* STATIC MULTI-FACE RENDERERS:
-                  Render static indices to avoid runtime overhead. These fetch 
-                  live matrix updates from faceDataRef without triggering React Renders! */}
+              {/* SINGLE FACE RENDERER:
+                  Renders a single 3D BasketModel fetching live matrix updates 
+                  from the faceDataRef without triggering any React re-renders. */}
               <BasketModel 
                 faceIndex={0}
-                faceDataRef={faceDataRef} 
-                isFrontCamera={isFrontCamera}
-              />
-              <BasketModel 
-                faceIndex={1}
                 faceDataRef={faceDataRef} 
                 isFrontCamera={isFrontCamera}
               />

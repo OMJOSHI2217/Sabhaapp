@@ -49,7 +49,7 @@ const FaceTracker = ({ videoElement, onFaceData, isActive = true }) => {
           },
           outputFaceBlendshapes: false,
           runningMode: "VIDEO",
-          numFaces: 2 // ⚡ OPTIMIZATION: Capped at 2 faces for massive speedup! (Standard filters use 1)
+          numFaces: 1 // ⚡ OPTIMIZATION: Set to exactly 1 face for maximum performance and stability!
         });
 
         if (!isMounted) {
