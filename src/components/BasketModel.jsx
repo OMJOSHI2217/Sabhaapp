@@ -139,7 +139,8 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
     // AUTO-ADJUST OFFSET: 
     // Calibrate upward projection to scale linearly with screen height (viewport.height)
     // to prevent it from flying too high up on tall vertical mobile screens!
-    const upwardOffset = faceHeight3D * (viewport.height * 0.27); 
+    // ⚡ TUNED: Reduced from 0.27 to 0.20 to lower the basket snugly onto the user's head!
+    const upwardOffset = faceHeight3D * (viewport.height * 0.20); 
     const targetPosition = headPosition.clone().addScaledVector(vUp, upwardOffset);
 
     // 5. Apply Dynamic Viewport Scaling
