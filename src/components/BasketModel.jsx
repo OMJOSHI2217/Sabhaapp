@@ -60,8 +60,8 @@ const MagicalDust = () => {
   );
 };
 
-// 🚀 Primary Exported AR Interface (Accepts selectedItems from parent state)
-const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems }) => {
+// 🚀 Primary Exported AR Interface
+const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems, videoElement }) => {
   const groupRef = useRef();
   const basketRef = useRef();
   const { viewport } = useThree();
@@ -76,7 +76,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   const texStudentCareer = useTexture(imgStudentCareer);
   const texWife = useTexture(imgWife);
 
-  // 🎨 COLOR CALIBRATION: Bind sRGB colorspace to all textures instantly to fix washed out/dim gray colors!
+  // 🎨 COLOR CALIBRATION
   useMemo(() => {
     const allTex = [
       texStoneBasket, texAdmission, texExam, texIncrement, 
@@ -84,7 +84,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     ];
     allTex.forEach(t => {
       if (t) {
-        t.colorSpace = THREE.SRGBColorSpace; // Standard Web 1:1 color space
+        t.colorSpace = THREE.SRGBColorSpace;
         t.needsUpdate = true;
       }
     });
@@ -109,7 +109,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   const currentScaleRef = useRef(1.0);
 
   useFrame((state) => {
-    // 🚀 FIXED BASKET SCALE: Locked exactly at 1.18x!
+    // 🚀 FIXED BASKET SCALE
     const targetBasketScale = 1.18;
     currentScaleRef.current = THREE.MathUtils.lerp(currentScaleRef.current, targetBasketScale, 0.15);
 
@@ -129,12 +129,39 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
     groupRef.current.visible = true;
 
+    // 📏 MATHEMATICAL ALIGNMENT CORRECTION FOR VIEWPORT CROPPING
+    // Translates raw detected points (0..1) into viewport-aware spaces, removing standard mobile-shift offsets
     const getPoint = (idx) => {
       const pt = faceLandmarks[idx];
       if (!pt) return { x: 0.5, y: 0.5, z: 0 };
+      
+      let rawX = isFrontCamera ? 1.0 - pt.x : pt.x;
+      let rawY = pt.y;
+      
+      let correctedX = rawX;
+      let correctedY = rawY;
+
+      // Corrects for 'object-fit: cover' aspect discrepancies (e.g. landscape camera vs portrait phone screen)
+      if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
+        const vW = videoElement.videoWidth;
+        const vH = videoElement.videoHeight;
+        const videoAspect = vW / vH;
+        const canvasAspect = viewport.width / viewport.height;
+
+        if (canvasAspect < videoAspect) {
+          // Mobile Portrait: video is cropped heavily on horizontal left/right sides!
+          const scale = videoAspect / canvasAspect;
+          correctedX = (rawX - 0.5) * scale + 0.5;
+        } else {
+          // Desktop Widescreen: video may be cropped slightly on top/bottom!
+          const scale = canvasAspect / videoAspect;
+          correctedY = (rawY - 0.5) * scale + 0.5;
+        }
+      }
+
       return {
-        x: isFrontCamera ? 1.0 - pt.x : pt.x,
-        y: pt.y,
+        x: correctedX,
+        y: correctedY,
         z: pt.z
       };
     };
@@ -144,16 +171,15 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const pForehead = getPoint(FOREHEAD);
     const pChin = getPoint(CHIN);
 
+    // Use the aspect-corrected coordinates to generate physically sound widths!
     const faceWidth = Math.sqrt(
       Math.pow(pRight.x - pLeft.x, 2) +
-      Math.pow(pRight.y - pLeft.y, 2) +
-      Math.pow(pRight.z - pLeft.z, 2)
+      Math.pow(pRight.y - pLeft.y, 2)
     );
 
     const faceHeight = Math.sqrt(
       Math.pow(pForehead.x - pChin.x, 2) +
-      Math.pow(pForehead.y - pChin.y, 2) +
-      Math.pow(pForehead.z - pChin.z, 2)
+      Math.pow(pForehead.y - pChin.y, 2)
     );
 
     const vRight = new THREE.Vector3(pRight.x - pLeft.x, -(pRight.y - pLeft.y), pRight.z - pLeft.z).normalize();
@@ -161,6 +187,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const vForward = new THREE.Vector3().crossVectors(vRight, vUpRaw).normalize();
     const vUp = new THREE.Vector3().crossVectors(vForward, vRight).normalize();
 
+    // Compute exact pixel-perfect viewport coordinates
     const x = (pForehead.x - 0.5) * viewport.width;
     const y = -(pForehead.y - 0.5) * viewport.height;
     const z = pForehead.z * -11.5;
@@ -172,15 +199,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const damping = 0.25;
     groupRef.current.position.lerp(targetPos, damping);
     
-    // 🚀 SCREEN-ADAPTIVE SCALE MULTIPLIER (SOLVES TINY MOBILE SIZE)
-    const isPortrait = viewport.height > viewport.width;
-    
-    // If portrait (mobile), use high-impact scalar based on viewport.height to negate screen narrowness!
-    // Increased the default multipliers robustly (+30% global upscaling bump!)
-    const baseScale = isPortrait 
-      ? (viewport.height * 0.62)  // ⚡ Massive, clear, perfectly proportioned size on smartphones!
-      : (viewport.width * 0.72);  // Grand, stunning size on desktop monitors!
-      
+    // 🚀 HIGH FIDELITY MULTIPLIER: Enabled by aspect calibration, size scales perfectly and huge by default!
+    const baseScale = viewport.width * 0.78; 
     const targetScaleFactor = faceWidth * baseScale;
     const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
     

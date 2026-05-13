@@ -200,7 +200,8 @@ function App() {
                 faceIndex={0}
                 faceDataRef={faceDataRef} 
                 isFrontCamera={isFrontCamera}
-                selectedItems={selectedItems} // Pass selected items down to R3F engine!
+                selectedItems={selectedItems} 
+                videoElement={videoElement} // 👈 Pass live video buffer for perfect crop alignment!
               />
             </Suspense>
 
