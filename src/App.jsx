@@ -37,7 +37,7 @@ function App() {
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
 
-  // --- Lifted Milestone State (Now reliably functioning outside AR View!) ---
+  // --- Lifted Milestone State ---
   const [selectedItems, setSelectedItems] = useState({
     "Student Career": true,
     "Admission": false,
@@ -55,8 +55,8 @@ function App() {
     }));
   };
 
-  const activeCount = Object.values(selectedItems).filter(Boolean).length;
-  const dynamicScaleText = (1.0 + activeCount * 0.18).toFixed(2);
+  const dynamicScaleText = "1.18"; // Static display locked at requested 1.18x
+
 
   const handleCapturePhoto = () => {
     if (!videoElement) return;

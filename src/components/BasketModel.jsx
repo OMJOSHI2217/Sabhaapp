@@ -100,9 +100,9 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   const currentScaleRef = useRef(1.0);
 
   useFrame((state) => {
-    // 1. 🚀 Dynamic Scaling Feedback (+18% scale boost per item for huge impact!)
-    const targetBasketScale = 1.0 + activeSelected.length * 0.18;
-    currentScaleRef.current = THREE.MathUtils.lerp(currentScaleRef.current, targetBasketScale, 0.12);
+    // 1. 🚀 FIXED BASKET SCALE: Locked exactly at 1.18x as requested!
+    const targetBasketScale = 1.18;
+    currentScaleRef.current = THREE.MathUtils.lerp(currentScaleRef.current, targetBasketScale, 0.15);
 
     if (basketRef.current) {
       basketRef.current.scale.setScalar(currentScaleRef.current);
@@ -145,11 +145,15 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const pChin = getPoint(CHIN);
 
     const faceWidth = Math.sqrt(
-      Math.pow(pRight.x - pLeft.x, 2) + Math.pow(pRight.y - pLeft.y, 2) + Math.pow(pRight.z - pLeft.z, 2)
+      Math.pow(pRight.x - pLeft.x, 2) +
+      Math.pow(pRight.y - pLeft.y, 2) +
+      Math.pow(pRight.z - pLeft.z, 2)
     );
 
     const faceHeight = Math.sqrt(
-      Math.pow(pForehead.x - pChin.x, 2) + Math.pow(pForehead.y - pChin.y, 2) + Math.pow(pForehead.z - pChin.z, 2)
+      Math.pow(pForehead.x - pChin.x, 2) +
+      Math.pow(pForehead.y - pChin.y, 2) +
+      Math.pow(pForehead.z - pChin.z, 2)
     );
 
     const vRight = new THREE.Vector3(pRight.x - pLeft.x, -(pRight.y - pLeft.y), pRight.z - pLeft.z).normalize();
@@ -162,10 +166,9 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const z = pForehead.z * -11.5;
 
     const headPos = new THREE.Vector3(x, y, z);
-    const upwardOffset = faceHeight * (viewport.height * 0.18); // Rest robustly lower onto forehead
+    const upwardOffset = faceHeight * (viewport.height * 0.18); 
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
-    // 🚀 MASSIVE SIZE BOOST: Upped baseScale from 0.44 to 0.64 (+45% Default Size Enlargement!)
     const baseScale = viewport.width * 0.64; 
     const targetScaleFactor = faceWidth * baseScale;
     const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
@@ -183,7 +186,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   return (
     <group ref={groupRef} dispose={null}>
       
-      {/* 1. 🧺 Enlarged Custom Image-Based Basket */}
+      {/* 1. 🧺 Fixed Size Custom Image-Based Basket */}
       <group ref={basketRef}>
         <mesh 
           rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 24), isFrontCamera ? Math.PI : 0, 0]}
@@ -191,7 +194,6 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           castShadow 
           receiveShadow
         >
-          {/* 🚀 ENLARGED BASE GEOMETRY: Widened from [1.8, 1.2] to [2.4, 1.6] (Massive appearance!) */}
           <planeGeometry args={[2.4, 1.6]} />
           <meshStandardMaterial 
             map={texStoneBasket}
@@ -206,7 +208,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
         </mesh>
       </group>
 
-      {/* 2. 🪨 Enlarged 3D Selected Milestone Pictures Stack */}
+      {/* 2. 🪨 ENLARGED 3D Selected Milestone Pictures Stack */}
       <group>
         {activeSelected.length === 0 ? (
           <Html center position={[0, 0.8, 0.1]} distanceFactor={4.5}>
@@ -218,11 +220,11 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
             
-            // Distribute layers with robust height steps
-            const yPos = 0.32 + index * 0.42;
+            // Robust stacked distribute layers adjusted for larger cards
+            const yPos = 0.34 + index * 0.48;
             
             const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
-            const zOffset = 0.15 + (index * 0.01); 
+            const zOffset = 0.15 + (index * 0.015); 
             const zRot = (index % 2 === 0 ? -0.035 : 0.035);
             const xRot = (isFrontCamera ? 1 : -1) * (Math.PI / 14);
 
@@ -234,8 +236,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
                 castShadow
                 receiveShadow
               >
-                {/* 🚀 ENLARGED STACK CARDS: Scaled from [1.35, 0.9] to [1.72, 1.15] for robust clarity */}
-                <planeGeometry args={[1.72, 1.15]} />
+                {/* 🚀 ENLARGED STONES: Physically widened from [1.72, 1.15] to [2.1, 1.4] to span inside basket! */}
+                <planeGeometry args={[2.1, 1.4]} />
                 <meshStandardMaterial 
                   map={texture}
                   bumpMap={texture}
