@@ -175,7 +175,8 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
       <primitive object={clonedScene} />
       
       {/* 🪨 Realistic Rock Stack placed inside the Basket */}
-      <mesh position={[0, 1.0, 0]} rotation={[-Math.PI / 12, 0, 0]}>
+      {/* ⚡ MIRROR FIX: Rotate 180deg (Math.PI) around Y when using front camera to un-mirror the text! */}
+      <mesh position={[0, 1.0, 0]} rotation={[-Math.PI / 12, isFrontCamera ? Math.PI : 0, 0]}>
         {/* Aspect ratio suited for a tall stack of rocks */}
         <planeGeometry args={[1.2, 1.8]} />
         <meshBasicMaterial 
