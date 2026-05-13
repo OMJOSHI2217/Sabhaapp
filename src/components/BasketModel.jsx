@@ -135,6 +135,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   }, [activeItems]);
 
   const currentScaleRef = useRef(1.0);
+  const presenceScaleRef = useRef(0.0); // 📏 KINEMATIC ZOOM: Tracks 0..1 presence status
+  const lastTrackedScaleRef = useRef(0.0); // 💾 PRESERVATION: Holds geometry for exit zoom
 
   useFrame((state) => {
     // 🚀 FIXED BASKET SCALE
@@ -150,12 +152,23 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
     const faceLandmarks = faceDataRef.current[faceIndex];
 
+    // 🏃‍♂️ TRACKING EXIT: Face lost, trigger smooth Zoom-Out shrink!
     if (!faceLandmarks) {
-      groupRef.current.visible = THREE.MathUtils.lerp(groupRef.current.visible ? 1 : 0, 0, 0.1) > 0.05;
+      presenceScaleRef.current = THREE.MathUtils.lerp(presenceScaleRef.current, 0.0, 0.16);
+      
+      // Hold the last valid tracking position and shrink the overall scale to zero!
+      const exitScale = lastTrackedScaleRef.current * presenceScaleRef.current;
+      groupRef.current.scale.setScalar(THREE.MathUtils.lerp(groupRef.current.scale.x, exitScale, 0.2));
+      
+      if (presenceScaleRef.current < 0.005) {
+        groupRef.current.visible = false;
+      }
       return;
     }
 
+    // 🚀 TRACKING ENTRANCE: Face found, activate group and zoom-in presence to 1.0!
     groupRef.current.visible = true;
+    presenceScaleRef.current = THREE.MathUtils.lerp(presenceScaleRef.current, 1.0, 0.10);
 
     // 📏 MATHEMATICAL ALIGNMENT CORRECTION FOR VIEWPORT CROPPING
     // Translates raw detected points (0..1) into viewport-aware spaces, removing standard mobile-shift offsets
@@ -230,7 +243,13 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     // 🚀 BALANCED MULTIPLIER: Reduced from 0.78 to 0.50 to perfectly calibrate the new high-density basket asset!
     const baseScale = viewport.width * 0.50;
     const targetScaleFactor = faceWidth * baseScale;
-    const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
+    
+    // Store for the graceful exit animation later!
+    lastTrackedScaleRef.current = targetScaleFactor;
+
+    // Apply entrance dynamic zoom factor!
+    const finalScaleFactor = targetScaleFactor * presenceScaleRef.current;
+    const targetScale = new THREE.Vector3(finalScaleFactor, finalScaleFactor, finalScaleFactor);
 
     groupRef.current.scale.lerp(targetScale, damping);
 
