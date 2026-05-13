@@ -220,8 +220,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
             
-            // Robust stacked distribute layers adjusted for larger cards
-            const yPos = 0.34 + index * 0.48;
+            // Elevated start pos from 0.34 to 0.54 to lift stone fully above basket front rim
+            const yPos = 0.54 + index * 0.48;
             
             const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
             const zOffset = 0.15 + (index * 0.015); 
