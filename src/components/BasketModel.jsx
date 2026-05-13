@@ -64,8 +64,6 @@ const MagicalDust = () => {
 const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems }) => {
   const groupRef = useRef();
   const basketRef = useRef();
-  const glowRef = useRef();
-  const spotRef = useRef();
   const { viewport } = useThree();
 
   // Load dynamic textures
@@ -78,6 +76,20 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   const texStudentCareer = useTexture(imgStudentCareer);
   const texWife = useTexture(imgWife);
 
+  // 🎨 COLOR CALIBRATION: Bind sRGB colorspace to all textures instantly to fix washed out/dim gray colors!
+  useMemo(() => {
+    const allTex = [
+      texStoneBasket, texAdmission, texExam, texIncrement, 
+      texInterview, texResults, texStudentCareer, texWife
+    ];
+    allTex.forEach(t => {
+      if (t) {
+        t.colorSpace = THREE.SRGBColorSpace; // Standard Web 1:1 color space
+        t.needsUpdate = true;
+      }
+    });
+  }, [texStoneBasket, texAdmission, texExam, texIncrement, texInterview, texResults, texStudentCareer, texWife]);
+
   const textures = useMemo(() => ({
     "Student Career": texStudentCareer,
     "Admission": texAdmission,
@@ -88,19 +100,16 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     "Wife": texWife,
   }), [texStudentCareer, texAdmission, texExam, texResults, texInterview, texIncrement, texWife]);
 
-  // Safe guard in case component loads before parent state propagates
   const activeItems = selectedItems || { "Student Career": true };
 
-  // Filter chronological order based on parent selection state
   const activeSelected = useMemo(() => {
     return MILESTONES.filter(m => activeItems[m.id]);
   }, [activeItems]);
 
-  // Smooth dynamic basket growth interpolation
   const currentScaleRef = useRef(1.0);
 
   useFrame((state) => {
-    // 1. 🚀 FIXED BASKET SCALE: Locked exactly at 1.18x as requested!
+    // 🚀 FIXED BASKET SCALE: Locked exactly at 1.18x!
     const targetBasketScale = 1.18;
     currentScaleRef.current = THREE.MathUtils.lerp(currentScaleRef.current, targetBasketScale, 0.15);
 
@@ -108,7 +117,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
       basketRef.current.scale.setScalar(currentScaleRef.current);
     }
 
-    // 2. Track face positioning
+    // Track face positioning
     if (!faceDataRef?.current || !groupRef.current) return;
 
     const faceLandmarks = faceDataRef.current[faceIndex];
@@ -119,15 +128,6 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     }
 
     groupRef.current.visible = true;
-
-    // Lighting pulses
-    const time = state.clock.elapsedTime;
-    if (glowRef.current) {
-      glowRef.current.intensity = 1.2 + Math.sin(time * 3.5) * 0.2;
-    }
-    if (spotRef.current) {
-      spotRef.current.intensity = 0.8 + Math.sin(time * 2.0) * 0.15;
-    }
 
     const getPoint = (idx) => {
       const pt = faceLandmarks[idx];
@@ -195,15 +195,13 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           receiveShadow
         >
           <planeGeometry args={[2.4, 1.6]} />
-          <meshStandardMaterial 
+          {/* 🌈 PERFECT 1:1 COLOR UPGRADE: Switched to meshBasicMaterial with toneMapped={false} for zero tint distortion! */}
+          <meshBasicMaterial 
             map={texStoneBasket}
-            bumpMap={texStoneBasket}
-            bumpScale={0.04}
             transparent={true}
-            alphaTest={0.22}
+            alphaTest={0.15}
             side={THREE.DoubleSide}
-            roughness={0.8}
-            metalness={0.1}
+            toneMapped={false}
           />
         </mesh>
       </group>
@@ -220,8 +218,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
             
-            // Elevated start pos from 0.34 to 0.54 to lift stone fully above basket front rim
-            const yPos = 0.54 + index * 0.48;
+            // Elevated start pos from 0.34 to 0.66 as user manually calibrated
+            const yPos = 0.66 + index * 0.68;
             
             const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
             const zOffset = 0.15 + (index * 0.015); 
@@ -236,17 +234,14 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
                 castShadow
                 receiveShadow
               >
-                {/* 🚀 ENLARGED STONES: Physically widened from [1.72, 1.15] to [2.1, 1.4] to span inside basket! */}
                 <planeGeometry args={[2.1, 1.4]} />
-                <meshStandardMaterial 
+                {/* 🌈 PERFECT 1:1 COLOR UPGRADE: Renders PNG file exact color without gray/blue 3D light tints! */}
+                <meshBasicMaterial 
                   map={texture}
-                  bumpMap={texture}
-                  bumpScale={0.05}
                   transparent={true}
-                  alphaTest={0.22}
-                  side={THREE.FrontSide}
-                  roughness={0.75}
-                  metalness={0.1}
+                  alphaTest={0.15}
+                  side={THREE.DoubleSide}
+                  toneMapped={false}
                 />
               </mesh>
             );
@@ -254,30 +249,9 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
         )}
       </group>
 
-      {/* 3. 🌟 Atmosphere */}
+      {/* 3. 🌟 Particle Atmosphere */}
       <MagicalDust />
-
-      {/* 4. 💡 Handcrafted Realism Lighting */}
-      <ambientLight intensity={0.7} color="#404060" />
       
-      <pointLight 
-        ref={glowRef}
-        color="#d48c54" 
-        intensity={1.2} 
-        distance={4.5} 
-        position={[0, 0.8, 0.25]} 
-        castShadow 
-      />
-
-      <spotLight 
-        ref={spotRef}
-        color="#ffdd99" 
-        intensity={0.8} 
-        position={[0, 3.5, 0.9]} 
-        castShadow 
-      />
-      
-      <pointLight color="#88aaff" intensity={0.5} position={[-1.2, 2.5, -2]} />
     </group>
   );
 };
