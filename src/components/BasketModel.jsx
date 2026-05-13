@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 // Import the GLB model directly as a static URL asset using Vite's ?url query
 import basketModelUrl from '../models/basket.glb?url';
-import rocksImageUrl from '../assets/rocks.png';
+import rocksImageUrl from '../assets/rocks_v2.png';
 
 // Landmarks lookup for placement
 const NOSE_TIP = 1;
