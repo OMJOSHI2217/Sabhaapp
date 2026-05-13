@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -9,8 +9,12 @@ const LEFT_CHEEK = 234;
 const RIGHT_CHEEK = 454;
 const CHIN = 152;
 
-// 🧺 Ultra-Premium Procedural 3D Woven Basket Component from HTML
-const ProceduralBasket = () => {
+// Sequence data
+const SEQUENCE_WORDS = ["JOB", "VIVA", "ASSIGNMENT", "EXAM"];
+const SCALE_INCREMENT = 0.35;
+
+// 🧺 Premium Procedural 3D Woven Basket Component
+const ProceduralBasket = ({ scale = 1.0 }) => {
   const height = 0.85;
   const rBase = 0.76;
   const rTop = 1.05;
@@ -21,7 +25,7 @@ const ProceduralBasket = () => {
   const tiltAngle = Math.atan2(rTop - rBase, height);
   const midRadius = (rBase + rTop) / 2;
 
-  // Procedural materials mapped precisely from the HTML
+  // Procedural materials from HTML
   const woodMat = useMemo(() => new THREE.MeshStandardMaterial({ 
     color: '#8b5a2b', 
     roughness: 0.55, 
@@ -41,7 +45,7 @@ const ProceduralBasket = () => {
     roughness: 0.8 
   }), []);
 
-  // Elegant spline-curve handle from HTML
+  // Elegant spline-curve handle
   const handleCurve = useMemo(() => new THREE.CatmullRomCurve3([
     new THREE.Vector3(0.95, height - 0.05, 0.55),
     new THREE.Vector3(0.45, height + 0.35, 0.85),
@@ -50,7 +54,7 @@ const ProceduralBasket = () => {
     new THREE.Vector3(-0.95, height - 0.05, 0.55)
   ]), [height]);
 
-  // Generate 35 randomized interior pebbles
+  // 35 randomized interior pebbles
   const pebbleData = useMemo(() => {
     return Array.from({ length: 35 }).map(() => ({
       pos: [
@@ -77,7 +81,7 @@ const ProceduralBasket = () => {
           <mesh 
             key={`rib-${i}`} 
             position={[Math.cos(angle) * midRadius, height / 2, Math.sin(angle) * midRadius]} 
-            rotation={[tiltAngle * 0.7, 0, -angle]} // Converted to Z rotation offset
+            rotation={[tiltAngle * 0.7, 0, -angle]} 
             castShadow
             material={woodMat}
           >
@@ -132,73 +136,99 @@ const ProceduralBasket = () => {
   );
 };
 
-// 🪨 3D Dodecahedron Stone Stack with Floating Perspectived HTML Text Labels
-const StoneStack = () => {
-  const stonesData = [
-    { pos: [-0.08, 0.35, 0.2], scale: [0.65, 0.38, 0.6], color: '#9aa9b3', word: "WISDOM", rotY: 0.05 },
-    { pos: [0.48, 0.55, -0.12], scale: [0.58, 0.44, 0.52], color: '#b7aa87', word: "STRENGTH", rotY: -0.1 },
-    { pos: [-0.55, 0.5, -0.05], scale: [0.6, 0.42, 0.55], color: '#8f9b9f', word: "HARMONY", rotY: 0.12 },
-    { pos: [0.08, 0.82, 0.25], scale: [0.55, 0.36, 0.5], color: '#c3b59b', word: "PEACE", rotY: 0.0 },
-    { pos: [-0.25, 0.95, -0.25], scale: [0.48, 0.35, 0.44], color: '#9dadb5', word: "JOY", rotY: 0.08 },
-    { pos: [0.38, 0.92, -0.28], scale: [0.52, 0.38, 0.48], color: '#b5a57c', word: "GRACE", rotY: -0.05 }
-  ];
+// 🪨 Dynamic Stone Stack Component (cycles through JOB, VIVA, ASSIGNMENT, EXAM)
+const SequentialStone = ({ currentWord, bumpFactor }) => {
+  const groupRef = useRef();
+  const stoneRef = useRef();
+  
+  // Additional small decorative stones revolving around base
+  const smallStoneMat = useMemo(() => new THREE.MeshStandardMaterial({ 
+    color: '#9aa9b3', 
+    roughness: 0.55 
+  }), []);
+
+  useFrame((state) => {
+    if (groupRef.current) {
+      // Gently rotate the decorative ring
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.3;
+    }
+    if (stoneRef.current) {
+      // Apply dynamic bump scale and subtle idle hover
+      const bumpScale = 1.0 + bumpFactor * 0.15;
+      const hover = Math.sin(state.clock.elapsedTime * 2.5) * 0.03;
+      stoneRef.current.scale.set(0.9 * bumpScale, 0.7 * bumpScale + hover, 0.85 * bumpScale);
+    }
+  });
 
   return (
-    <group>
-      {/* Base foundation stone */}
-      <mesh position={[0, 0.18, 0.02]} scale={[0.9, 0.35, 0.9]} castShadow>
-        <dodecahedronGeometry args={[0.5]} />
-        <meshStandardMaterial color="#7c8a7c" roughness={0.7} />
+    <group position={[0, 0.45, 0.15]}>
+      {/* 1. The Main Central Dynamic Stone */}
+      <mesh ref={stoneRef} castShadow receiveShadow>
+        <dodecahedronGeometry args={[0.55]} />
+        <meshStandardMaterial 
+          color="#b7aa87" 
+          roughness={0.4} 
+          metalness={0.08} 
+          emissive="#332200" 
+          emissiveIntensity={0.15} 
+        />
       </mesh>
 
-      {/* The Floating Pillars of Strength with styled labels */}
-      {stonesData.map((stone, i) => {
-        const yLabelOffset = stone.scale[1] * 0.6 + 0.12;
-        return (
-          <group key={`stone-${i}`} position={stone.pos} rotation={[0, stone.rotY, 0]}>
-            {/* The actual physical 3D Stone Mesh */}
-            <mesh scale={stone.scale} castShadow receiveShadow>
-              <dodecahedronGeometry args={[0.45]} />
-              <meshStandardMaterial color={stone.color} roughness={0.45} metalness={0.05} />
-            </mesh>
+      {/* 2. Dynamic Floating Text Label */}
+      <Html 
+        position={[0, 0.58, 0.12]} 
+        center 
+        distanceFactor={4.5}
+        zIndexRange={[10, 100]}
+      >
+        <div style={{
+          fontFamily: "'Georgia', 'Times New Roman', serif",
+          fontSize: "15px",
+          fontWeight: "800",
+          fontStyle: "italic",
+          color: "#fdf0d5",
+          textShadow: "2px 2px 0px #3a2a1f, 2px 2px 6px black",
+          letterSpacing: "3px",
+          background: "rgba(20, 15, 8, 0.82)",
+          padding: "7px 18px",
+          borderRadius: "50px",
+          borderLeft: "4px solid #e5b83c",
+          borderRight: "1px solid #b5762e",
+          backdropFilter: "blur(5px)",
+          WebkitBackdropFilter: "blur(5px)",
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+          userSelect: "none",
+          boxShadow: "0 5px 15px rgba(0,0,0,0.4)",
+          transform: `scale(${1.0 + bumpFactor * 0.1})`,
+          transition: 'transform 0.1s ease-out'
+        }}>
+          {currentWord}
+        </div>
+      </Html>
 
-            {/* HTML Label that behaves exactly like CSS2DRenderer but is fully responsive */}
-            <Html 
-              position={[0, yLabelOffset, 0.06]} 
-              center 
-              distanceFactor={4.5} 
-              zIndexRange={[10, 100]}
+      {/* 3. Revolving Small Decorative Stone Ring */}
+      <group ref={groupRef}>
+        {Array.from({ length: 8 }).map((_, i) => {
+          const angle = (i / 8) * Math.PI * 2;
+          const rad = 0.85;
+          return (
+            <mesh 
+              key={`small-stone-${i}`} 
+              position={[Math.cos(angle) * rad, 0.2 + Math.sin(angle * 2) * 0.1, Math.sin(angle) * rad]} 
+              castShadow
+              material={smallStoneMat}
             >
-              <div style={{
-                fontFamily: "'Georgia', 'Times New Roman', serif",
-                fontSize: "13px",
-                fontWeight: "800",
-                fontStyle: "italic",
-                color: "#f2e8cf",
-                textShadow: "1.5px 1.5px 0px #3a2a1f, 1px 1px 4px black",
-                letterSpacing: "2px",
-                background: "rgba(30, 20, 12, 0.72)",
-                padding: "4px 14px",
-                borderRadius: "40px",
-                borderLeft: "3px solid #e5b83c",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-                whiteSpace: "nowrap",
-                pointerEvents: "none",
-                userSelect: "none",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
-              }}>
-                {stone.word}
-              </div>
-            </Html>
-          </group>
-        );
-      })}
+              <dodecahedronGeometry args={[0.12]} />
+            </mesh>
+          );
+        })}
+      </group>
     </group>
   );
 };
 
-// 🌟 Swirling Magical Particle Cloud Component
+// 🌟 Magical Particle Cloud
 const MagicalDust = () => {
   const pointsRef = useRef();
   const count = 400;
@@ -222,20 +252,9 @@ const MagicalDust = () => {
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute 
-          attach="attributes-position" 
-          count={count} 
-          array={positions} 
-          itemSize={3} 
-        />
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial 
-        color="#dbbc87" 
-        size={0.025} 
-        transparent 
-        opacity={0.45} 
-        sizeAttenuation 
-      />
+      <pointsMaterial color="#dbbc87" size={0.025} transparent opacity={0.45} sizeAttenuation />
     </points>
   );
 };
@@ -243,34 +262,61 @@ const MagicalDust = () => {
 // 🚀 Main Exported Face Tracking Basket Model
 const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
   const groupRef = useRef();
+  const basketRef = useRef();
   const glowRef = useRef();
   const spotRef = useRef();
+  const bumpRef = useRef(0);
   
   const { viewport } = useThree();
 
+  // Sequence State Management
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const currentScaleRef = useRef(1.0);
+
+  // Cycle word every 4.5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % SEQUENCE_WORDS.length);
+      bumpRef.current = 1.0; // Trigger dynamic scaling pop and light flash!
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
+
   useFrame((state) => {
+    // Decay pop/bump factor smoothly
+    bumpRef.current = THREE.MathUtils.lerp(bumpRef.current, 0, 0.15);
+
+    // Smoothly grow basket scale (target scale is 1.0 + increment)
+    const targetProceduralScale = 1.0 + currentIndex * SCALE_INCREMENT;
+    currentScaleRef.current = THREE.MathUtils.lerp(currentScaleRef.current, targetProceduralScale, 0.12);
+
+    if (basketRef.current) {
+      basketRef.current.scale.setScalar(currentScaleRef.current);
+    }
+
     if (!faceDataRef?.current || !groupRef.current) return;
 
     const faceLandmarks = faceDataRef.current[faceIndex];
 
     if (!faceLandmarks) {
-      // Fade out gently if no face is visible
       groupRef.current.visible = THREE.MathUtils.lerp(groupRef.current.visible ? 1 : 0, 0, 0.1) > 0.05;
       return;
     }
 
     groupRef.current.visible = true;
 
-    // Pulse the interior point lights from HTML
+    // Dynamic Light Updates (flashes bright on word change)
     const time = state.clock.elapsedTime;
     if (glowRef.current) {
-      glowRef.current.intensity = 1.2 + Math.sin(time * 3.5) * 0.3;
+      const baseIntensity = 1.4 + Math.sin(time * 3) * 0.3;
+      const flashEffect = bumpRef.current * 1.2;
+      glowRef.current.intensity = baseIntensity + flashEffect;
     }
     if (spotRef.current) {
-      spotRef.current.intensity = 0.9 + Math.sin(time * 2.0) * 0.15;
+      spotRef.current.intensity = 0.8 + Math.sin(time * 2.0) * 0.15;
     }
 
-    // Fetch landmarks with frontend camera correction
+    // Mirror mapping
     const getPoint = (idx) => {
       const pt = faceLandmarks[idx];
       if (!pt) return { x: 0.5, y: 0.5, z: 0 };
@@ -286,7 +332,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
     const pForehead = getPoint(FOREHEAD);
     const pChin = getPoint(CHIN);
 
-    // Compute dimensional vectors
+    // Dimensions
     const faceWidth = Math.sqrt(
       Math.pow(pRight.x - pLeft.x, 2) +
       Math.pow(pRight.y - pLeft.y, 2) +
@@ -299,87 +345,118 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true }) => {
       Math.pow(pForehead.z - pChin.z, 2)
     );
 
-    // Build local basis matrix
-    const vRight = new THREE.Vector3(
-      pRight.x - pLeft.x,
-      -(pRight.y - pLeft.y),
-      pRight.z - pLeft.z
-    ).normalize();
-
-    const vUpRaw = new THREE.Vector3(
-      pForehead.x - pChin.x,
-      -(pForehead.y - pChin.y),
-      pForehead.z - pChin.z
-    ).normalize();
-
+    // Orientation
+    const vRight = new THREE.Vector3(pRight.x - pLeft.x, -(pRight.y - pLeft.y), pRight.z - pLeft.z).normalize();
+    const vUpRaw = new THREE.Vector3(pForehead.x - pChin.x, -(pForehead.y - pChin.y), pForehead.z - pChin.z).normalize();
     const vForward = new THREE.Vector3().crossVectors(vRight, vUpRaw).normalize();
     const vUp = new THREE.Vector3().crossVectors(vForward, vRight).normalize();
 
-    // Mapping coordinates dynamically to Viewport
+    // Positioning
     const x = (pForehead.x - 0.5) * viewport.width;
     const y = -(pForehead.y - 0.5) * viewport.height;
     const z = pForehead.z * -12;
 
     const headPos = new THREE.Vector3(x, y, z);
-    const upwardOffset = faceHeight * (viewport.height * 0.22); 
+    const upwardOffset = faceHeight * (viewport.height * 0.21); 
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
-    // Scaling
+    // Global face scale factor
     const baseScale = viewport.width * 0.45; 
     const targetScaleFactor = faceWidth * baseScale;
     const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
 
-    // Smooth movement lerping
     const damping = 0.25;
     groupRef.current.position.lerp(targetPos, damping);
     groupRef.current.scale.lerp(targetScale, damping);
 
-    // Create quaternion rotation
+    // Rotations
     const rotMat = new THREE.Matrix4();
     rotMat.makeBasis(vRight, vUp, vForward);
     const targetQuat = new THREE.Quaternion().setFromRotationMatrix(rotMat);
     groupRef.current.quaternion.slerp(targetQuat, damping);
   });
 
+  const activeWord = SEQUENCE_WORDS[currentIndex];
+
   return (
     <group ref={groupRef} dispose={null}>
-      {/* 1. 🧺 Woven Procedural Basket */}
-      <ProceduralBasket />
+      {/* 📜 Fullscreen DOM HUD Layer */}
+      <Html fullscreen style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        {/* Left corner current sequence HUD */}
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          background: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          padding: '12px 26px',
+          borderRadius: '50px',
+          color: '#eab308',
+          fontFamily: 'monospace',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          letterSpacing: '2px',
+          borderBottom: '2px solid #eab308',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          zIndex: 200
+        }}>
+          📜 CURRENT: <span style={{ color: '#fef08a' }}>{activeWord}</span>
+        </div>
 
-      {/* 2. 🪨 Floating Stone Stack with Perspectived Styled HTML Text */}
-      <StoneStack />
+        {/* Right side size scale HUD */}
+        <div style={{
+          position: 'absolute',
+          bottom: '90px',
+          right: '20px',
+          background: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          padding: '8px 18px',
+          borderRadius: '25px',
+          color: '#eab308',
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          borderLeft: '2px solid #eab308',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 200
+        }}>
+          📏 Basket Scale: <span style={{ fontWeight: 'bold' }}>{currentScaleRef.current.toFixed(2)}x</span>
+        </div>
+      </Html>
 
-      {/* 3. 🌟 Magical Particle Cloud */}
+      {/* 1. 🧺 Woven Basket Group (animates procedural scaling) */}
+      <group ref={basketRef}>
+        <ProceduralBasket />
+      </group>
+
+      {/* 2. 🪨 Sequential Main Stone & Orbiting Stones */}
+      <SequentialStone currentWord={activeWord} bumpFactor={bumpRef.current} />
+
+      {/* 3. 🌟 Particle Cloud */}
       <MagicalDust />
 
-      {/* 4. 💡 Dynamic Inner Illumination & Accent Lights */}
+      {/* 4. 💡 Illumination Structure */}
       <ambientLight intensity={0.55} color="#404060" />
       
-      {/* Inner glowing PointLight from HTML */}
       <pointLight 
         ref={glowRef}
         color="#f59e0b" 
-        intensity={1.5} 
+        intensity={1.4} 
         distance={4} 
-        position={[0, 0.6, 0.3]} 
+        position={[0, 0.7, 0.3]} 
         castShadow 
       />
 
-      {/* Dramatic Spotlight for stone texturing from HTML */}
       <spotLight 
         ref={spotRef}
         color="#ffdd99" 
-        intensity={0.9} 
+        intensity={0.8} 
         position={[0, 3.2, 0.8]} 
         castShadow 
       />
       
-      {/* Subtle cold rim light from HTML */}
-      <pointLight 
-        color="#88aaff" 
-        intensity={0.5} 
-        position={[-1.2, 2.5, -2]} 
-      />
+      <pointLight color="#88aaff" intensity={0.5} position={[-1.2, 2.5, -2]} />
     </group>
   );
 };
