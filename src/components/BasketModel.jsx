@@ -4,7 +4,7 @@ import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Import assets
-import rocksImageUrl from '../assets/rocks_v2.png';
+import rocksImageUrl from '../assets/rocks_v3.png';
 
 // Landmarks lookup for placement
 const NOSE_TIP = 1;
@@ -248,13 +248,13 @@ const BasketModel = ({ faceIndex, faceDataRef, isFrontCamera = true }) => {
       {/* 🪨 Realistic 3D Rock Stack placed inside the Basket */}
       {/* ⚡ LIGHTING & TEXTURE OVERHAUL: Renders with bump-mapped depth, casts shadows, and balances correctly */}
       <mesh 
-        position={[0, 0.9, 0.1]} 
+        position={[0, 0.75, 0.1]} 
         rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 12), isFrontCamera ? Math.PI : 0, 0]}
         castShadow
         receiveShadow
       >
-        {/* Aspect ratio perfectly suited for a tall, natural stack of rocks */}
-        <planeGeometry args={[1.2, 1.8]} />
+        {/* Aspect ratio perfectly calibrated for 4 text-bearing rocks */}
+        <planeGeometry args={[1.2, 1.45]} />
         <meshStandardMaterial
           map={rocksTexture}
           bumpMap={rocksTexture} // ⚡ RENDER TRICK: Convert luminance to depth map for real stone crags!
