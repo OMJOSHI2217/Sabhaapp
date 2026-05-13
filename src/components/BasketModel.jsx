@@ -165,16 +165,25 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const y = -(pForehead.y - 0.5) * viewport.height;
     const z = pForehead.z * -11.5;
 
-    // Elevated upwardOffset multiplier from 0.18 to 0.28 to move basket above the forehead onto the crown of the head
-    const upwardOffset = faceHeight * (viewport.height * 0.28); 
+    const headPos = new THREE.Vector3(x, y, z);
+    const upwardOffset = faceHeight * (viewport.height * 0.18); 
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
-
-    const baseScale = viewport.width * 0.64; 
-    const targetScaleFactor = faceWidth * baseScale;
-    const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
 
     const damping = 0.25;
     groupRef.current.position.lerp(targetPos, damping);
+    
+    // 🚀 SCREEN-ADAPTIVE SCALE MULTIPLIER (SOLVES TINY MOBILE SIZE)
+    const isPortrait = viewport.height > viewport.width;
+    
+    // If portrait (mobile), use high-impact scalar based on viewport.height to negate screen narrowness!
+    // Increased the default multipliers robustly (+30% global upscaling bump!)
+    const baseScale = isPortrait 
+      ? (viewport.height * 0.62)  // ⚡ Massive, clear, perfectly proportioned size on smartphones!
+      : (viewport.width * 0.72);  // Grand, stunning size on desktop monitors!
+      
+    const targetScaleFactor = faceWidth * baseScale;
+    const targetScale = new THREE.Vector3(targetScaleFactor, targetScaleFactor, targetScaleFactor);
+    
     groupRef.current.scale.lerp(targetScale, damping);
 
     const rotMat = new THREE.Matrix4();
@@ -186,7 +195,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   return (
     <group ref={groupRef} dispose={null}>
       
-      {/* 1. 🧺 Fixed Size Custom Image-Based Basket */}
+      {/* 1. 🧺 Enlarged Fixed Size Custom Image-Based Basket */}
       <group ref={basketRef}>
         <mesh 
           rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 24), isFrontCamera ? Math.PI : 0, 0]}
@@ -194,8 +203,9 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           castShadow 
           receiveShadow
         >
-          <planeGeometry args={[2.4, 1.6]} />
-          {/* 🌈 PERFECT 1:1 COLOR UPGRADE: Switched to meshBasicMaterial with toneMapped={false} for zero tint distortion! */}
+          {/* 🚀 ENLARGED GEOMETRY: Widened base size to 2.65 to guarantee huge presence on screen! */}
+          <planeGeometry args={[2.65, 1.76]} />
+          {/* 🌈 PERFECT 1:1 COLOR UPGRADE */}
           <meshBasicMaterial 
             map={texStoneBasket}
             transparent={true}
@@ -218,8 +228,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
             
-            // Elevated start pos from 0.34 to 0.66 as user manually calibrated
-            const yPos = 0.66 + index * 0.68;
+            // Perfectly calibrated vertical steps for the massive upscaled cards
+            const yPos = 0.75 + index * 0.74;
             
             const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
             const zOffset = 0.15 + (index * 0.015); 
@@ -234,8 +244,8 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
                 castShadow
                 receiveShadow
               >
-                <planeGeometry args={[2.1, 1.4]} />
-                {/* 🌈 PERFECT 1:1 COLOR UPGRADE: Renders PNG file exact color without gray/blue 3D light tints! */}
+                {/* 🚀 ENLARGED STONE GEOMETRY: Upscaled to 2.3 to fit fully across the expanded 2.65 wide basket! */}
+                <planeGeometry args={[2.3, 1.53]} />
                 <meshBasicMaterial 
                   map={texture}
                   transparent={true}
