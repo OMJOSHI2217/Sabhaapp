@@ -41,6 +41,16 @@ function App() {
   // Feature States
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const handleCycleZoom = () => {
+    setZoom(prev => {
+      if (prev === 1) return 2;
+      if (prev === 2) return 3;
+      if (prev === 3) return 5;
+      return 1;
+    });
+  };
 
   // --- Lifted Milestone State ---
   const [selectedItems, setSelectedItems] = useState({
@@ -95,23 +105,24 @@ function App() {
     merged.height = targetH;
     const ctx = merged.getContext('2d');
 
-    // 4. Implement 'object-fit: cover' source cropping math
-    let sx = 0;
-    let sy = 0;
-    let sWidth = videoW;
-    let sHeight = videoH;
+    // 4. Implement 'object-fit: cover' source cropping math WITH ACTIVE DIGITAL ZOOM SUPPORT
+    let sWidthUnzoomed = videoW;
+    let sHeightUnzoomed = videoH;
 
     if (screenAspect < videoAspect) {
       // Portrait Mode (Mobile): Viewport is narrower than raw landscape camera.
       // Crop excess horizontal sides to focus on the center vertical strip!
-      sWidth = videoH * screenAspect;
-      sx = (videoW - sWidth) / 2;
+      sWidthUnzoomed = videoH * screenAspect;
     } else {
       // Widescreen Mode (Desktop): Viewport is wider than raw camera aspect.
       // Crop excess top/bottom vertical sections!
-      sHeight = videoW / screenAspect;
-      sy = (videoH - sHeight) / 2;
+      sHeightUnzoomed = videoW / screenAspect;
     }
+
+    const sWidth = sWidthUnzoomed / zoom;
+    const sHeight = sHeightUnzoomed / zoom;
+    const sx = (videoW - sWidth) / 2;
+    const sy = (videoH - sHeight) / 2;
 
     // 5. Draw Background Video buffer with matching mirror transform
     ctx.save();
@@ -122,8 +133,13 @@ function App() {
     ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
     ctx.restore();
 
-    // 6. Overlay 3D Canvas buffer (Matches target dimensions mathematically without stretching)
-    ctx.drawImage(canvas3d, 0, 0, targetW, targetH);
+    // 6. Overlay 3D Canvas buffer (Proportionally cropped and scaled to match exact visual zoom layer)
+    const cx = (canvas3d.width - canvas3d.width / zoom) / 2;
+    const cy = (canvas3d.height - canvas3d.height / zoom) / 2;
+    const cWidth = canvas3d.width / zoom;
+    const cHeight = canvas3d.height / zoom;
+
+    ctx.drawImage(canvas3d, cx, cy, cWidth, cHeight, 0, 0, targetW, targetH);
 
     // 7. Fire UX effects and initiate file download
     setIsFlashing(true);
@@ -203,13 +219,59 @@ function App() {
           </div>
         </div>
 
-        {/* Video Stream */}
-        <CameraFeed 
-          onVideoReady={setVideoElement} 
-          facingMode={isFrontCamera ? "user" : "environment"}
-        />
+        {/* 🎥 HARDWARE-ACCELERATED DIGITAL ZOOM WRAPPER */}
+        <div className="zoom-wrapper" style={{ transform: `scale(${zoom})` }}>
+          {/* Video Stream */}
+          <CameraFeed 
+            onVideoReady={setVideoElement} 
+            facingMode={isFrontCamera ? "user" : "environment"}
+          />
 
-        {/* Neural Engine */}
+          {/* 3. 3D WebGL Overlay */}
+          <div className="canvas-container">
+            <Canvas
+              shadows
+              camera={{ position: [0, 0, 8], fov: 50 }}
+              gl={{ 
+                antialias: true, 
+                alpha: true,
+                preserveDrawingBuffer: true 
+              }}
+              onCreated={({ gl }) => {
+                gl.setClearColor(0x000000, 0);
+              }}
+            >
+              <ambientLight intensity={1.0} />
+              <directionalLight
+                position={[5, 10, 5]}
+                intensity={1.2}
+                castShadow
+              />
+              
+              <Suspense fallback={null}>
+                <Environment preset="city" />
+                
+                <BasketModel 
+                  faceIndex={0}
+                  faceDataRef={faceDataRef} 
+                  isFrontCamera={isFrontCamera}
+                  selectedItems={selectedItems} 
+                  videoElement={videoElement} // 👈 Pass live video buffer for perfect crop alignment!
+                />
+              </Suspense>
+
+              <ContactShadows
+                position={[0, -4, 0]}
+                opacity={0.3}
+                scale={10}
+                blur={3}
+                far={4}
+              />
+            </Canvas>
+          </div>
+        </div>
+
+        {/* Neural Engine (Placed OUTSIDE zoomable container so loading HUD remains stable!) */}
         {videoElement && (
           <FaceTracker 
             videoElement={videoElement} 
@@ -217,49 +279,6 @@ function App() {
             isActive={true}
           />
         )}
-
-        {/* 3. 3D WebGL Overlay */}
-        <div className="canvas-container">
-          <Canvas
-            shadows
-            camera={{ position: [0, 0, 8], fov: 50 }}
-            gl={{ 
-              antialias: true, 
-              alpha: true,
-              preserveDrawingBuffer: true 
-            }}
-            onCreated={({ gl }) => {
-              gl.setClearColor(0x000000, 0);
-            }}
-          >
-            <ambientLight intensity={1.0} />
-            <directionalLight
-              position={[5, 10, 5]}
-              intensity={1.2}
-              castShadow
-            />
-            
-            <Suspense fallback={null}>
-              <Environment preset="city" />
-              
-              <BasketModel 
-                faceIndex={0}
-                faceDataRef={faceDataRef} 
-                isFrontCamera={isFrontCamera}
-                selectedItems={selectedItems} 
-                videoElement={videoElement} // 👈 Pass live video buffer for perfect crop alignment!
-              />
-            </Suspense>
-
-            <ContactShadows
-              position={[0, -4, 0]}
-              opacity={0.3}
-              scale={10}
-              blur={3}
-              far={4}
-            />
-          </Canvas>
-        </div>
 
         {/* Bottom Controls */}
         {videoElement && (
@@ -280,7 +299,14 @@ function App() {
               <div className="shutter-inner" />
             </button>
 
-            <div className="control-btn-spacer" />
+            {/* 🔍 DYNAMIC ZOOM CONTROLLER PRESET (UP TO 5x) */}
+            <button 
+              className="control-btn glass-panel ripple" 
+              onClick={handleCycleZoom}
+              title="Change Zoom Factor"
+            >
+              <span className="zoom-indicator-text">{zoom}x</span>
+            </button>
           </div>
         )}
 

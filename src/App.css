@@ -58,6 +58,20 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
+.zoom-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform-origin: center center;
+  /* Super fluid dynamic backout transition for responsive, physical spring zoom feeling */
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.zoom-wrapper > * {
+  pointer-events: auto;
+}
 
 .camera-container {
   position: absolute;
@@ -340,6 +354,16 @@
 
 .control-btn:active {
   transform: scale(0.95);
+}
+
+.zoom-indicator-text {
+  color: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  user-select: none;
 }
 
 /* Sleek Circular Shutter Button (iOS/Android Style) */
