@@ -1,11 +1,3 @@
-/* 🚫 DEVICE INJECTOR DECLUTTER: Target & Hide Browser-Injected Mobile Consoles (Eruda, vConsole, etc.) */
-#eruda, .eruda-container, .eruda-entry, [id^="eruda"], #__vconsole, .vc-toggle {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
 .app-container {
   position: relative;
   width: 100vw;
@@ -443,11 +435,6 @@
   }
 }
 
-/* Hide Mobile Toggle Utility hooks on default Desktop interfaces */
-.mobile-menu-toggle, .md-mobile-close-btn {
-  display: none;
-}
-
 /* --- Milestone Floating Dashboard Outer (Right Vertical Sidebar) --- */
 .milestones-dashboard-outer {
   position: absolute;
@@ -616,7 +603,7 @@
     display: none; /* Cleaner viewport without overlapping info */
   }
 
-  /* Right-Pinned Compact Sidebar Adaptive Positioning WITH DRAWER SLIDING */
+  /* Right-Pinned Compact Sidebar Adaptive Positioning */
   .milestones-dashboard-outer {
     top: 45% !important;
     right: 0.75rem !important;
@@ -624,66 +611,10 @@
     padding: 0.85rem 0.65rem !important;
     border-radius: 1.25rem !important;
     gap: 0.5rem !important;
-    background: rgba(10, 10, 10, 0.94) !important;
+    background: rgba(10, 10, 10, 0.92) !important;
     max-height: 55% !important; /* 🔒 HEIGHT LOCK: Prevents container from ever covering camera controls! */
     overflow-y: auto !important; /* 📜 FORCE SCROLLBAR: Generates scroll-view if items overflow */
     -webkit-overflow-scrolling: touch !important; /* 🚀 SMOOTH SCROLL: Enables native iOS momentum touch scrolling */
-    z-index: 120 !important;
-    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease !important;
-  }
-
-  .milestones-dashboard-outer.mobile-hidden {
-    transform: translate(calc(100% + 1.5rem), -50%) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  .milestones-dashboard-outer.mobile-visible {
-    transform: translate(0, -50%) !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-
-  /* 📱 Mobile-Only Header Closing Layout hooks */
-  .md-mobile-close-btn {
-    display: flex !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(234, 179, 8, 0.2) !important;
-    cursor: pointer !important;
-    padding: 0.3rem !important;
-    border-radius: 0.5rem !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: background-color 0.2s !important;
-  }
-  
-  .md-mobile-close-btn:active {
-    background: rgba(255, 255, 255, 0.1) !important;
-  }
-
-  /* 📱 FLOATING TOP-RIGHT MOBILE DRAWER TOGGLE BUTTON */
-  .mobile-menu-toggle {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    position: absolute !important;
-    top: max(1.5rem, env(safe-area-inset-top, 24px)) !important;
-    right: 1.5rem !important;
-    width: 46px !important;
-    height: 46px !important;
-    border-radius: 50% !important;
-    border: 1.5px solid rgba(234, 179, 8, 0.3) !important;
-    background: rgba(15, 15, 15, 0.88) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    z-index: 110 !important;
-    cursor: pointer !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
-    transition: transform 0.2s, background-color 0.2s !important;
-  }
-  
-  .mobile-menu-toggle:active {
-    transform: scale(0.92) !important;
   }
 
   .md-header {
@@ -707,16 +638,41 @@
 
   /* Position controls with proper safety buffers */
   .camera-controls {
-    bottom: calc(1.5rem + env(safe-area-inset-bottom, 15px)) !important;
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 10px)) !important;
+    justify-content: center !important; /* Center buttons to prevent overlapping side-pinned dashboard elements */
+    gap: 1.5rem !important;
+    padding: 0 !important;
   }
 
-  /* 🚫 IMMERSIVE MOBILE LAYOUT: Hide Zoom and Flip Camera buttons to focus strictly on the shutter */
+  /* 📱 MOBILE UI OPTIMIZATION: Downscale controls for beautiful, non-obtrusive visual presence */
   .camera-controls .control-btn {
-    display: none !important;
+    width: 44px !important;
+    height: 44px !important;
+    display: flex !important; /* RE-ENABLE zoom and flip buttons */
+  }
+
+  .camera-controls .control-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .camera-controls .zoom-indicator-text {
+    font-size: 0.8rem !important;
+  }
+
+  .camera-controls .shutter-btn {
+    width: 64px !important;
+    height: 64px !important;
+    border-width: 3.5px !important;
+  }
+
+  .camera-controls .shutter-inner {
+    width: 46px !important;
+    height: 46px !important;
   }
   
   .visual-prompt {
-    bottom: calc(7.5rem + env(safe-area-inset-bottom, 15px)) !important;
+    bottom: calc(6.5rem + env(safe-area-inset-bottom, 10px)) !important;
   }
 }
 
@@ -738,6 +694,36 @@
   .md-checkbox-input {
     width: 0.85rem !important;
     height: 0.85rem !important;
+  }
+
+  /* 📟 ULTRA-TIGHT MICRO SCREEN CONTROLS: Extra reduction to protect extremely small viewports */
+  .camera-controls {
+    gap: 0.9rem !important;
+  }
+
+  .camera-controls .control-btn {
+    width: 38px !important;
+    height: 38px !important;
+  }
+  
+  .camera-controls .control-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .camera-controls .zoom-indicator-text {
+    font-size: 0.75rem !important;
+  }
+
+  .camera-controls .shutter-btn {
+    width: 56px !important;
+    height: 56px !important;
+    border-width: 3px !important;
+  }
+
+  .camera-controls .shutter-inner {
+    width: 40px !important;
+    height: 40px !important;
   }
 }
 
