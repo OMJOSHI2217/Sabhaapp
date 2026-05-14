@@ -61,9 +61,9 @@ const FaceTracker = ({
           // HIGH ACCURACY SETTINGS
           // ==============================
 
-          minFaceDetectionConfidence: 0.75,
-          minTrackingConfidence: 0.75,
-          minFacePresenceConfidence: 0.75,
+          minFaceDetectionConfidence: 0.85,
+          minTrackingConfidence: 0.85,
+          minFacePresenceConfidence: 0.85,
 
           outputFaceBlendshapes: false,
         });
