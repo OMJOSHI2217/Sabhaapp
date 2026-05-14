@@ -256,7 +256,8 @@ function App() {
                   faceDataRef={faceDataRef} 
                   isFrontCamera={isFrontCamera}
                   selectedItems={selectedItems} 
-                  videoElement={videoElement} // 👈 Pass live video buffer for perfect crop alignment!
+                  videoElement={videoElement}
+                  zoom={zoom} // 👈 Pass active zoom factor for dynamic offset adaptations!
                 />
               </Suspense>
 

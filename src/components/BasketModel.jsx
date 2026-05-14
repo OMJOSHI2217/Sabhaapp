@@ -71,7 +71,7 @@ const MagicalDust = () => {
 };
 
 // 🚀 Primary Exported AR Interface
-const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems, videoElement }) => {
+const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems, videoElement, zoom = 1 }) => {
   const groupRef = useRef();
   const basketRef = useRef();
   const { viewport } = useThree();
@@ -243,7 +243,11 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     
     // Compute physical heights at target depth so offset remains constant and locked above head
     const physicalFaceHeight = faceHeight * viewport.height * projectionScale;
-    const upwardOffset = physicalFaceHeight * 0.18; // Pre-calibrated ratio
+    
+    // 📏 ZOOM-ADAPTIVE BOUNDING: As magnification increases, gently nest the basket tighter onto the head.
+    // This guarantees the basket stays fully visible inside highly cropped zoomed viewports!
+    const zoomCorrection = zoom === 1 ? 1.0 : zoom === 2 ? 0.86 : zoom === 3 ? 0.76 : 0.66;
+    const upwardOffset = physicalFaceHeight * (0.18 * zoomCorrection);
     
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
