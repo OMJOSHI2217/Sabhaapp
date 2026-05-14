@@ -207,45 +207,40 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
       };
     };
 
-    const pLeft = getPoint(LEFT_CHEEK);
-    const pRight = getPoint(RIGHT_CHEEK);
-    const pForehead = getPoint(FOREHEAD);
-    const pChin = getPoint(CHIN);
+    // 🛰️ 3D WORLD PROJECTION LOCATOR: Converts a normalized point to a physical Vector3 in 3D space!
+    const cameraZ = 8;
+    const getPos = (idx) => {
+      const pt = getPoint(idx);
+      const pointZ = pt.z * -11.5;
+      const pScale = (cameraZ - pointZ) / cameraZ;
+      return new THREE.Vector3(
+        (pt.x - 0.5) * viewport.width * pScale,
+        -(pt.y - 0.5) * viewport.height * pScale,
+        pointZ
+      );
+    };
 
-    // Use the aspect-corrected coordinates to generate physically sound widths!
-    const faceWidth = Math.sqrt(
-      Math.pow(pRight.x - pLeft.x, 2) +
-      Math.pow(pRight.y - pLeft.y, 2)
-    );
+    // Retrieve key facial landmarks as TRUE isotropic 3D vectors!
+    const wLeft = getPos(LEFT_CHEEK);
+    const wRight = getPos(RIGHT_CHEEK);
+    const wForehead = getPos(FOREHEAD);
+    const wChin = getPos(CHIN);
 
-    const faceHeight = Math.sqrt(
-      Math.pow(pForehead.x - pChin.x, 2) +
-      Math.pow(pForehead.y - pChin.y, 2)
-    );
-
-    const vRight = new THREE.Vector3(pRight.x - pLeft.x, -(pRight.y - pLeft.y), pRight.z - pLeft.z).normalize();
-    const vUpRaw = new THREE.Vector3(pForehead.x - pChin.x, -(pForehead.y - pChin.y), pForehead.z - pChin.z).normalize();
+    // 📐 PURE ORTHONORMAL ORIENTATION BASIS (100% Aspect-Invariant)
+    const vRight = new THREE.Vector3().subVectors(wRight, wLeft).normalize();
+    const vUpRaw = new THREE.Vector3().subVectors(wForehead, wChin).normalize();
+    // Compute normal forward vector orthogonal to both right & upward
     const vForward = new THREE.Vector3().crossVectors(vRight, vUpRaw).normalize();
+    // Enforce perfectly square upward alignment to prevent parallax warping when tilting
     const vUp = new THREE.Vector3().crossVectors(vForward, vRight).normalize();
 
-    // 📏 PERSPECTIVE PROJECTION LOCK
-    const cameraZ = 8; // Defined distance of perspective camera inside Canvas
-    const z = pForehead.z * -11.5;
-    
-    // Compute projection scale to correct perspective division shift as face moves depth-wise or off-axis
-    const projectionScale = (cameraZ - z) / cameraZ;
+    // Measure physical real-world distances directly in isotropic Three.js space!
+    const physicalFaceWidth = wRight.distanceTo(wLeft);
+    const physicalFaceHeight = wForehead.distanceTo(wChin);
 
-    // Compute exact pixel-perfect viewport coordinates, dynamically scaled to active depth plane!
-    const x = (pForehead.x - 0.5) * viewport.width * projectionScale;
-    const y = -(pForehead.y - 0.5) * viewport.height * projectionScale;
-
-    const headPos = new THREE.Vector3(x, y, z);
+    const headPos = wForehead;
     
-    // Compute physical heights at target depth so offset remains constant and locked above head
-    const physicalFaceHeight = faceHeight * viewport.height * projectionScale;
-    
-    // 📏 ZOOM-ADAPTIVE BOUNDING: As magnification increases, gently nest the basket tighter onto the head.
-    // This guarantees the basket stays fully visible inside highly cropped zoomed viewports!
+    // 📏 ZOOM-ADAPTIVE BOUNDING: Maintain optimized height offsets during magnification
     const zoomCorrection = zoom === 1 ? 1.0 : zoom === 2 ? 0.86 : zoom === 3 ? 0.76 : 0.66;
     const upwardOffset = physicalFaceHeight * (0.18 * zoomCorrection);
     
@@ -254,10 +249,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const damping = 0.25;
     groupRef.current.position.lerp(targetPos, damping);
 
-    // 🚀 ABSOLUTE PHYSICAL SCALING: Translate 2D screen size into constant 3D world units
-    const physicalFaceWidth = faceWidth * viewport.width * projectionScale;
-    
-    // Multiply physical width by the exact pre-configured user constant (0.50)
+    // Multiply the true physical 3D width by the fine-tuned constant (0.50)
     const targetScaleFactor = physicalFaceWidth * 0.50;
     
     // Store for the graceful exit animation later!
