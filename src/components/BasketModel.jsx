@@ -135,8 +135,12 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
   }, [activeItems]);
 
   const currentScaleRef = useRef(1.0);
-  const presenceScaleRef = useRef(0.0); // 📏 KINEMATIC ZOOM: Tracks 0..1 presence status
-  const lastTrackedScaleRef = useRef(0.0); // 💾 PRESERVATION: Holds geometry for exit zoom
+  const presenceScaleRef = useRef(0.0);
+  const lastTrackedScaleRef = useRef(0.0);
+  // Grace frames: don't start exit animation until face is CONSISTENTLY missing for N frames.
+  // Prevents flickering detections (especially with CPU-delegate float32 model) from collapsing the basket.
+  const faceLostFramesRef = useRef(0);
+  const FACE_GRACE_FRAMES = 12;
 
   useFrame((state) => {
     // 🚀 FIXED BASKET SCALE
@@ -152,21 +156,23 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
     const faceLandmarks = faceDataRef.current[faceIndex];
 
-    // 🏃‍♂️ TRACKING EXIT: Face lost, trigger smooth Zoom-Out shrink!
+    // 🏃‍♂️ TRACKING EXIT: face not found — hold for grace period before shrinking
     if (!faceLandmarks) {
-      presenceScaleRef.current = THREE.MathUtils.lerp(presenceScaleRef.current, 0.0, 0.16);
-      
-      // Hold the last valid tracking position and shrink the overall scale to zero!
+      faceLostFramesRef.current++;
+      // Hold steady during grace window (absorbs flicker from borderline confidence detections)
+      if (faceLostFramesRef.current < FACE_GRACE_FRAMES) return;
+
+      presenceScaleRef.current = THREE.MathUtils.lerp(presenceScaleRef.current, 0.0, 0.10);
       const exitScale = lastTrackedScaleRef.current * presenceScaleRef.current;
       groupRef.current.scale.setScalar(THREE.MathUtils.lerp(groupRef.current.scale.x, exitScale, 0.2));
-      
       if (presenceScaleRef.current < 0.005) {
         groupRef.current.visible = false;
       }
       return;
     }
 
-    // 🚀 TRACKING ENTRANCE: Face found, activate group and zoom-in presence to 1.0!
+    // 🚀 TRACKING ENTRANCE: Face found — reset grace counter and fade in
+    faceLostFramesRef.current = 0;
     groupRef.current.visible = true;
     presenceScaleRef.current = THREE.MathUtils.lerp(presenceScaleRef.current, 1.0, 0.18);
 

@@ -496,10 +496,10 @@
   position: absolute;
   top: 50%;
   right: 1.75rem;
-  transform: translateY(-50%);
+  transform: translateX(0) translateY(-50%);
   width: 210px;
-  max-height: 82%; /* 🛡️ VERTICAL OVERFLOW PROTECTION: Prevents clipping off short screens */
-  overflow-y: auto; /* 📜 AUTO-SCROLL: Seamless internal scrolling on tiny windows */
+  max-height: 82%;
+  overflow-y: auto;
   z-index: 100;
   background: rgba(15, 15, 15, 0.88);
   backdrop-filter: blur(16px);
@@ -514,7 +514,86 @@
   gap: 0.85rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   user-select: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+/* Collapsed/hidden state — slides off to the right */
+.milestones-dashboard-outer.panel-hidden {
+  transform: translateX(calc(100% + 2rem)) translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Floating open-panel button (visible when panel is collapsed) */
+.sidebar-open-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.85rem;
+  transform: translateY(-50%);
+  z-index: 101;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  background: rgba(12, 12, 12, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(234, 179, 8, 0.15);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+}
+
+.sidebar-open-btn:hover {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(234, 179, 8, 0.3);
+}
+
+/* Badge showing count of checked milestones */
+.sidebar-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #eab308;
+  color: #000;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, monospace;
+}
+
+/* Close button inside panel header */
+.md-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.panel-close-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.panel-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.15);
 }
 
 /* Sleek, premium scrollbar styling for dashboard */
@@ -548,6 +627,7 @@
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.6rem;
+  width: 100%;
 }
 
 .md-footer-text {
@@ -659,18 +739,32 @@
     display: none; /* Cleaner viewport without overlapping info */
   }
 
-  /* Right-Pinned Compact Sidebar Adaptive Positioning */
+  /* Compact panel on mobile */
   .milestones-dashboard-outer {
     top: 45% !important;
     right: 0.75rem !important;
-    width: 165px !important;
+    width: 160px !important;
     padding: 0.85rem 0.65rem !important;
     border-radius: 1.25rem !important;
     gap: 0.5rem !important;
     background: rgba(10, 10, 10, 0.92) !important;
-    max-height: 55% !important; /* 🔒 HEIGHT LOCK: Prevents container from ever covering camera controls! */
-    overflow-y: auto !important; /* 📜 FORCE SCROLLBAR: Generates scroll-view if items overflow */
-    -webkit-overflow-scrolling: touch !important; /* 🚀 SMOOTH SCROLL: Enables native iOS momentum touch scrolling */
+    max-height: 55% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    transform: translateX(0) translateY(-50%) !important;
+  }
+
+  .milestones-dashboard-outer.panel-hidden {
+    transform: translateX(calc(100% + 1rem)) translateY(-50%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .sidebar-open-btn {
+    top: 45% !important;
+    right: 0.75rem !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 
   .md-header {
@@ -761,6 +855,20 @@
     right: 0.5rem !important;
     padding: 0.75rem 0.55rem !important;
     top: 42% !important;
+    transform: translateX(0) translateY(-50%) !important;
+  }
+
+  .milestones-dashboard-outer.panel-hidden {
+    transform: translateX(calc(100% + 0.75rem)) translateY(-50%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .sidebar-open-btn {
+    top: 42% !important;
+    right: 0.5rem !important;
+    width: 40px !important;
+    height: 40px !important;
   }
 
   .md-item {

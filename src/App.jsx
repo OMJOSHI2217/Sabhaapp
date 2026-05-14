@@ -1,7 +1,7 @@
 import React, { useState, Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Environment, ContactShadows } from '@react-three/drei';
-import { Sparkles, CameraOff, Cpu, UserCheck, Camera, RefreshCw, Plus, Minus } from 'lucide-react';
+import { Sparkles, CameraOff, Cpu, UserCheck, Camera, RefreshCw, Plus, Minus, Layers, X } from 'lucide-react';
 
 import CameraFeed from './components/CameraFeed';
 import FaceTracker from './components/FaceTracker';
@@ -42,6 +42,7 @@ function App() {
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 820);
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(5, parseFloat((prev + 0.5).toFixed(1))));
@@ -74,7 +75,8 @@ function App() {
     }));
   };
 
-  const dynamicScaleText = "1.18"; // Static display locked at requested 1.18x
+  const dynamicScaleText = "1.18";
+  const checkedCount = Object.values(selectedItems).filter(Boolean).length;
 
 
   // 🚀 ULTIMATE ASPECT-CORRECT SNAPSHOT ENGINE
@@ -188,11 +190,23 @@ function App() {
       {/* Central Viewport */}
       <div className="game-viewport glass-panel">
         
-        {/* 🚀 ULTIMATE RENDER UPGRADE: EXTERNAL INTERACTIVE CHECKBOX DASHBOARD */}
-        {/* Placed OUTSIDE R3F Canvas, fully operable and catches DOM PointerEvents flawlessly */}
-        <div className="milestones-dashboard-outer">
+        {/* Floating open button — visible only when panel is collapsed */}
+        {!sidebarOpen && (
+          <button className="sidebar-open-btn ripple" onClick={() => setSidebarOpen(true)}>
+            <Layers size={20} color="#eab308" />
+            {checkedCount > 0 && <span className="sidebar-badge">{checkedCount}</span>}
+          </button>
+        )}
+
+        {/* Milestones Panel — collapsible */}
+        <div className={`milestones-dashboard-outer${sidebarOpen ? '' : ' panel-hidden'}`}>
           <div className="md-header">
-            <span>🎯 Milestones</span>
+            <div className="md-header-row">
+              <span>🎯 Milestones</span>
+              <button className="panel-close-btn" onClick={() => setSidebarOpen(false)} title="Hide panel">
+                <X size={13} color="rgba(255,255,255,0.7)" />
+              </button>
+            </div>
             <span style={{ color: '#fde047' }}>📦 Scale: {dynamicScaleText}x</span>
           </div>
           

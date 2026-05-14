@@ -4,7 +4,7 @@ import { FilesetResolver, FaceLandmarker } from "@mediapipe/tasks-vision";
 let globalVisionPromise = null;
 let cachedLandmarker = null;
 // Bump this string whenever landmarker config changes — forces cache invalidation on hot reload
-const LANDMARKER_VERSION = 'v4-float32-cpu';
+const LANDMARKER_VERSION = 'v5-float16-cpu';
 let cachedVersion = null;
 
 function getVisionPromise() {
@@ -54,10 +54,9 @@ const FaceTracker = ({
 
         const landmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            // float32 model: more accurate than float16, handles distance/angles/low-light better
             modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float32/1/face_landmarker.task",
-            // CPU delegate is far more reliable across browsers/devices than GPU
+              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            // CPU delegate is more reliable across browsers/devices than GPU
             delegate: "CPU",
           },
 
