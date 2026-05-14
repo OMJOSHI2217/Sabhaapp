@@ -1,7 +1,7 @@
 import React, { useState, Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Environment, ContactShadows } from '@react-three/drei';
-import { Sparkles, CameraOff, Cpu, UserCheck, Camera, RefreshCw } from 'lucide-react';
+import { Sparkles, CameraOff, Cpu, UserCheck, Camera, RefreshCw, List, X } from 'lucide-react';
 
 import CameraFeed from './components/CameraFeed';
 import FaceTracker from './components/FaceTracker';
@@ -42,6 +42,7 @@ function App() {
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // 📱 Controls mobile slide-out dashboard drawer
 
   const handleCycleZoom = () => {
     setZoom(prev => {
@@ -191,9 +192,18 @@ function App() {
         
         {/* 🚀 ULTIMATE RENDER UPGRADE: EXTERNAL INTERACTIVE CHECKBOX DASHBOARD */}
         {/* Placed OUTSIDE R3F Canvas, fully operable and catches DOM PointerEvents flawlessly */}
-        <div className="milestones-dashboard-outer">
+        <div className={`milestones-dashboard-outer ${isMenuOpen ? 'mobile-visible' : 'mobile-hidden'}`}>
           <div className="md-header">
-            <span>🎯 Milestones</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <span>🎯 Milestones</span>
+              <button 
+                className="md-mobile-close-btn" 
+                onClick={() => setIsMenuOpen(false)}
+                title="Close Menu"
+              >
+                <X size={16} color="#eab308" />
+              </button>
+            </div>
             <span style={{ color: '#fde047' }}>📦 Scale: {dynamicScaleText}x</span>
           </div>
           
@@ -218,6 +228,15 @@ function App() {
             <span>✨ Stack your life stones inside the basket ✨</span>
           </div>
         </div>
+
+        {/* 📱 FLOATING MOBILE MENU TOGGLE BUTTON (Shows only on mobile <=820px) */}
+        <button 
+          className="mobile-menu-toggle glass-panel ripple"
+          onClick={() => setIsMenuOpen(prev => !prev)}
+          title="Toggle Menu"
+        >
+          <List size={22} color="white" />
+        </button>
 
         {/* 🎥 HARDWARE-ACCELERATED DIGITAL ZOOM WRAPPER */}
         <div className="zoom-wrapper" style={{ transform: `scale(${zoom})` }}>
