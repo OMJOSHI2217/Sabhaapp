@@ -1,7 +1,7 @@
 import React, { useState, Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Environment, ContactShadows } from '@react-three/drei';
-import { Sparkles, CameraOff, Cpu, UserCheck, Camera, RefreshCw, Plus, Minus, Layers, X } from 'lucide-react';
+import { Sparkles, CameraOff, Cpu, UserCheck, Camera, RefreshCw, Plus, Minus, Layers, X, Upload, Image as ImageIcon } from 'lucide-react';
 
 import CameraFeed from './components/CameraFeed';
 import FaceTracker from './components/FaceTracker';
@@ -42,7 +42,12 @@ function App() {
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [showBasket, setShowBasket] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 820);
+
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const fileInputRef = useRef(null);
+  const imageRef = useRef(null);
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(5, parseFloat((prev + 0.5).toFixed(1))));
@@ -50,6 +55,29 @@ function App() {
 
   const handleZoomOut = () => {
     setZoom(prev => Math.max(1, parseFloat((prev - 0.5).toFixed(1))));
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setUploadedImage(event.target.result);
+      setVideoElement(null);
+      faceDataRef.current = [];
+      setNumFaces(0);
+      setZoom(1); // Reset zoom to 1.0x to ensure user sees unzoomed picture initially
+      // Automatically open side panel to let user select milestones
+      setSidebarOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearImage = () => {
+    setUploadedImage(null);
+    setVideoElement(null);
+    faceDataRef.current = [];
+    setNumFaces(0);
   };
 
   // --- Lifted Milestone State ---
@@ -92,9 +120,10 @@ function App() {
     const clientH = canvas3d.clientHeight;
     const screenAspect = clientW / clientH;
 
-    // 2. Detect raw camera sensor metrics
-    const videoW = videoElement.videoWidth;
-    const videoH = videoElement.videoHeight;
+    // 2. Detect raw media metrics
+    const isImage = videoElement instanceof HTMLImageElement;
+    const videoW = isImage ? videoElement.naturalWidth : videoElement.videoWidth;
+    const videoH = isImage ? videoElement.naturalHeight : videoElement.videoHeight;
     const videoAspect = videoW / videoH;
 
     // 3. Construct optimal target canvas resolution locked to sensor height for crispness
@@ -127,7 +156,8 @@ function App() {
 
     // 5. Draw Background Video buffer with matching mirror transform
     ctx.save();
-    if (isFrontCamera) {
+    const shouldMirror = !isImage && isFrontCamera;
+    if (shouldMirror) {
       ctx.translate(targetW, 0);
       ctx.scale(-1, 1);
     }
@@ -188,7 +218,13 @@ function App() {
       </div>
 
       {/* Central Viewport */}
-      <div className="game-viewport glass-panel">
+      <div 
+        className={`game-viewport glass-panel${uploadedImage && videoElement instanceof HTMLImageElement ? ' image-mode-active' : ''}`}
+        style={uploadedImage && videoElement instanceof HTMLImageElement && videoElement.naturalWidth ? {
+          aspectRatio: `${videoElement.naturalWidth} / ${videoElement.naturalHeight}`,
+          '--viewport-width': `min(90vw, calc(80vh * ${videoElement.naturalWidth / videoElement.naturalHeight}), 1080px)`
+        } : {}}
+      >
         
         {/* Floating open button — visible only when panel is collapsed */}
         {!sidebarOpen && (
@@ -211,6 +247,20 @@ function App() {
           </div>
           
           <div className="md-checkbox-row">
+            {/* 🧺 MASTER BASKET TOGGLE */}
+            <label 
+              className={`md-item ${showBasket ? 'selected' : ''}`} 
+              style={{ borderLeft: '3px solid #eab308', background: showBasket ? 'rgba(234, 179, 8, 0.22)' : 'rgba(255, 255, 255, 0.03)' }}
+            >
+              <input 
+                type="checkbox"
+                checked={showBasket}
+                onChange={() => setShowBasket(prev => !prev)}
+                className="md-checkbox-input"
+              />
+              <span style={{ fontWeight: 'bold', color: '#fde047' }}>🧺 Stone Basket</span>
+            </label>
+
             {MILESTONES.map((m) => (
               <label 
                 key={m.id} 
@@ -234,11 +284,37 @@ function App() {
 
         {/* 🎥 HARDWARE-ACCELERATED DIGITAL ZOOM WRAPPER */}
         <div className="zoom-wrapper" style={{ transform: `scale(${zoom})` }}>
-          {/* Video Stream */}
-          <CameraFeed 
-            onVideoReady={setVideoElement} 
-            facingMode={isFrontCamera ? "user" : "environment"}
-          />
+          {uploadedImage ? (
+            <div className="camera-container">
+              <img
+                ref={imageRef}
+                src={uploadedImage}
+                alt="Uploaded photo"
+                className="camera-video"
+                onLoad={() => {
+                  if (imageRef.current) {
+                    setVideoElement(imageRef.current);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'fill', // Perfect 1:1 coverage driven by aspect-locked viewport styling
+                  borderRadius: '1.5rem',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                  border: '2px solid rgba(255,255,255,0.1)',
+                  transform: 'none'
+                }}
+              />
+              <div className="camera-overlay"></div>
+            </div>
+          ) : (
+            /* Video Stream */
+            <CameraFeed 
+              onVideoReady={setVideoElement} 
+              facingMode={isFrontCamera ? "user" : "environment"}
+            />
+          )}
 
           {/* 3. 3D WebGL Overlay */}
           <div className="canvas-container">
@@ -267,10 +343,11 @@ function App() {
                 <BasketModel 
                   faceIndex={0}
                   faceDataRef={faceDataRef} 
-                  isFrontCamera={isFrontCamera}
+                  isFrontCamera={uploadedImage ? false : isFrontCamera}
                   selectedItems={selectedItems} 
                   videoElement={videoElement}
                   zoom={zoom} // 👈 Pass active zoom factor for dynamic offset adaptations!
+                  showBasket={showBasket}
                 />
               </Suspense>
 
@@ -297,12 +374,39 @@ function App() {
         {/* Bottom Controls */}
         {videoElement && (
           <div className="camera-controls">
+            <input 
+              type="file" 
+              accept="image/*" 
+              ref={fileInputRef} 
+              onChange={handleImageUpload} 
+              style={{ display: 'none' }} 
+            />
+
+            {uploadedImage ? (
+              <button 
+                className="control-btn glass-panel ripple" 
+                onClick={handleClearImage}
+                title="Back to Live"
+                style={{ borderColor: '#eab308' }}
+              >
+                <Camera size={24} color="#eab308" />
+              </button>
+            ) : (
+              <button 
+                className="control-btn glass-panel ripple" 
+                onClick={handleToggleCamera}
+                title="Flip Camera"
+              >
+                <RefreshCw size={24} color="white" />
+              </button>
+            )}
+
             <button 
               className="control-btn glass-panel ripple" 
-              onClick={handleToggleCamera}
-              title="Flip Camera"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              title="Upload Image"
             >
-              <RefreshCw size={24} color="white" />
+              <Upload size={24} color="white" />
             </button>
 
             <button 

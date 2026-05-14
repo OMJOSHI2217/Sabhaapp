@@ -71,7 +71,7 @@ const MagicalDust = () => {
 };
 
 // 🚀 Primary Exported AR Interface
-const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems, videoElement, zoom = 1 }) => {
+const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selectedItems, videoElement, zoom = 1, showBasket = true }) => {
   const groupRef = useRef();
   const basketRef = useRef();
   const { viewport } = useThree();
@@ -158,6 +158,13 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
     // 🏃‍♂️ TRACKING EXIT: face not found — hold for grace period before shrinking
     if (!faceLandmarks) {
+      // 🛡️ STABILITY SAFEGUARD FOR STATIC IMAGES:
+      // If dealing with a static photo and a face was already mapped once, persist the tracking
+      // rather than collapsing the basket. This guards against transient detection losses!
+      if (videoElement instanceof HTMLImageElement && lastTrackedScaleRef.current > 0) {
+        return;
+      }
+
       faceLostFramesRef.current++;
       // Hold steady during grace window (absorbs flicker from borderline confidence detections)
       if (faceLostFramesRef.current < FACE_GRACE_FRAMES) return;
@@ -189,9 +196,11 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
       let correctedY = rawY;
 
       // Corrects for 'object-fit: cover' aspect discrepancies (e.g. landscape camera vs portrait phone screen)
-      if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
-        const vW = videoElement.videoWidth;
-        const vH = videoElement.videoHeight;
+      const isImage = videoElement instanceof HTMLImageElement;
+      const vW = isImage ? videoElement.naturalWidth : (videoElement?.videoWidth || 0);
+      const vH = isImage ? videoElement.naturalHeight : (videoElement?.videoHeight || 0);
+
+      if (vW && vH) {
         const videoAspect = vW / vH;
         const canvasAspect = viewport.width / viewport.height;
 
@@ -245,11 +254,11 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const physicalFaceHeight = wForehead.distanceTo(wChin);
 
     const headPos = wForehead;
-    
+
     // Divide offset by zoom so the visual gap between basket and forehead stays constant
     // at all CSS zoom levels (CSS scales everything proportionally, so 3D offset must shrink inversely)
     const upwardOffset = (physicalFaceHeight * 0.18) / Math.max(1, zoom);
-    
+
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
     const damping = 0.15;
@@ -257,7 +266,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
     // Multiply the true physical 3D width by the fine-tuned constant (0.50)
     const targetScaleFactor = physicalFaceWidth * 0.50;
-    
+
     // Store for the graceful exit animation later!
     lastTrackedScaleRef.current = targetScaleFactor;
 
@@ -277,25 +286,27 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     <group ref={groupRef} dispose={null}>
 
       {/* 1. 🧺 Enlarged Fixed Size Custom Image-Based Basket */}
-      <group ref={basketRef}>
-        <mesh
-          rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 24), isFrontCamera ? Math.PI : 0, 0]}
-          position={[0, 0.05, 0.0]}
-          castShadow
-          receiveShadow
-        >
-          {/* 🚀 ENLARGED GEOMETRY: Widened base size to 2.65 to guarantee huge presence on screen! */}
-          <planeGeometry args={[2.65, 1.76]} />
-          {/* 🌈 PERFECT 1:1 COLOR UPGRADE */}
-          <meshBasicMaterial
-            map={texStoneBasket}
-            transparent={true}
-            alphaTest={0.15}
-            side={THREE.DoubleSide}
-            toneMapped={false}
-          />
-        </mesh>
-      </group>
+      {showBasket && (
+        <group ref={basketRef}>
+          <mesh
+            rotation={[(isFrontCamera ? 1 : -1) * (Math.PI / 24), isFrontCamera ? Math.PI : 0, 0]}
+            position={[0, 0.05, 0.0]}
+            castShadow
+            receiveShadow
+          >
+            {/* 🚀 ENLARGED GEOMETRY: Widened base size to 2.65 to guarantee huge presence on screen! */}
+            <planeGeometry args={[2.65, 1.76]} />
+            {/* 🌈 PERFECT 1:1 COLOR UPGRADE */}
+            <meshBasicMaterial
+              map={texStoneBasket}
+              transparent={true}
+              alphaTest={0.15}
+              side={THREE.DoubleSide}
+              toneMapped={false}
+            />
+          </mesh>
+        </group>
+      )}
 
       {/* 2. 🪨 ENLARGED 3D Selected Milestone Pictures Stack */}
       <group>
@@ -309,8 +320,9 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
           activeSelected.map((item, index) => {
             const texture = textures[item.id];
 
-            // Increased the step slightly from 0.60 to 0.66 to reach the absolute perfect visual gap!
-            const yPos = 0.72 + index * 0.66;
+            // Position the stack slightly higher over the forehead when the basket is toggled off
+            const baseY = showBasket ? 0.70 : 0.36;
+            const yPos = baseY + index * 0.66;
 
             const xOffset = (index % 2 === 0 ? -0.035 : 0.035);
             const zOffset = 0.15 + (index * 0.015);

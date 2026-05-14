@@ -111,20 +111,27 @@ const FaceTracker = ({
     const detect = () => {
       if (
         !videoElement ||
-        videoElement.paused ||
-        videoElement.ended
+        (videoElement instanceof HTMLVideoElement && (videoElement.paused || videoElement.ended))
       ) {
         requestRef.current = requestAnimationFrame(detect);
         return;
       }
 
       // ==============================
-      // RUN ONLY ON NEW FRAME
+      // RUN ONLY ON NEW DATA FRAME
       // ==============================
 
-      if (videoElement.currentTime !== lastVideoTimeRef.current) {
-        lastVideoTimeRef.current = videoElement.currentTime;
+      const isImage = videoElement instanceof HTMLImageElement;
+      let shouldDetect = false;
 
+      if (isImage) {
+        shouldDetect = true;
+      } else if (videoElement.currentTime !== lastVideoTimeRef.current) {
+        lastVideoTimeRef.current = videoElement.currentTime;
+        shouldDetect = true;
+      }
+
+      if (shouldDetect) {
         const now = performance.now();
 
         try {
