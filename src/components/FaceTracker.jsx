@@ -3,6 +3,9 @@ import { FilesetResolver, FaceLandmarker } from "@mediapipe/tasks-vision";
 
 let globalVisionPromise = null;
 let cachedLandmarker = null;
+// Bump this string whenever landmarker config changes — forces cache invalidation on hot reload
+const LANDMARKER_VERSION = 'v4-float32-cpu';
+let cachedVersion = null;
 
 function getVisionPromise() {
   if (!globalVisionPromise) {
@@ -39,19 +42,23 @@ const FaceTracker = ({
     let isMounted = true;
 
     async function init() {
-      if (cachedLandmarker) {
+      if (cachedLandmarker && cachedVersion === LANDMARKER_VERSION) {
         setIsLoading(false);
         return;
       }
+      // Config changed — recreate the landmarker with updated settings
+      cachedLandmarker = null;
 
       try {
         const vision = await getVisionPromise();
 
         const landmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
+            // float32 model: more accurate than float16, handles distance/angles/low-light better
             modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-            delegate: "GPU",
+              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float32/1/face_landmarker.task",
+            // CPU delegate is far more reliable across browsers/devices than GPU
+            delegate: "CPU",
           },
 
           runningMode: "VIDEO",
@@ -61,9 +68,9 @@ const FaceTracker = ({
           // HIGH ACCURACY SETTINGS
           // ==============================
 
-          minFaceDetectionConfidence: 0.85,
-          minTrackingConfidence: 0.85,
-          minFacePresenceConfidence: 0.85,
+          minFaceDetectionConfidence: 0.4,
+          minTrackingConfidence: 0.4,
+          minFacePresenceConfidence: 0.4,
 
           outputFaceBlendshapes: false,
         });
@@ -71,6 +78,7 @@ const FaceTracker = ({
         if (!isMounted) return;
 
         cachedLandmarker = landmarker;
+        cachedVersion = LANDMARKER_VERSION;
         setIsLoading(false);
       } catch (err) {
         console.error(err);

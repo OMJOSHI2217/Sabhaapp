@@ -168,7 +168,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
     // 🚀 TRACKING ENTRANCE: Face found, activate group and zoom-in presence to 1.0!
     groupRef.current.visible = true;
-    presenceScaleRef.current = THREE.MathUtils.lerp(presenceScaleRef.current, 1.0, 0.10);
+    presenceScaleRef.current = THREE.MathUtils.lerp(presenceScaleRef.current, 1.0, 0.18);
 
     // 📏 MATHEMATICAL ALIGNMENT CORRECTION FOR VIEWPORT CROPPING
     // Translates raw detected points (0..1) into viewport-aware spaces, removing standard mobile-shift offsets
@@ -212,7 +212,7 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const getPos = (idx) => {
       const pt = getPoint(idx);
       const pointZ = pt.z * -11.5;
-      const pScale = (cameraZ - pointZ) / cameraZ;
+      const pScale = Math.max(0.4, Math.min(1.6, (cameraZ - pointZ) / cameraZ));
       return new THREE.Vector3(
         (pt.x - 0.5) * viewport.width * pScale,
         -(pt.y - 0.5) * viewport.height * pScale,
@@ -240,13 +240,13 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
 
     const headPos = wForehead;
     
-    // 📏 SMOOTH LINEAR ZOOM-ADAPTATION: Seamlessly nest the basket tighter as floats scale incrementally
-    const zoomCorrection = Math.max(0.65, 1.0 - (zoom - 1.0) * 0.085);
-    const upwardOffset = physicalFaceHeight * (0.18 * zoomCorrection);
+    // Divide offset by zoom so the visual gap between basket and forehead stays constant
+    // at all CSS zoom levels (CSS scales everything proportionally, so 3D offset must shrink inversely)
+    const upwardOffset = (physicalFaceHeight * 0.18) / Math.max(1, zoom);
     
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
-    const damping = 0.25;
+    const damping = 0.15;
     groupRef.current.position.lerp(targetPos, damping);
 
     // Multiply the true physical 3D width by the fine-tuned constant (0.50)
