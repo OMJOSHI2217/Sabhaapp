@@ -228,21 +228,33 @@ const BasketModel = ({ faceIndex = 0, faceDataRef, isFrontCamera = true, selecte
     const vForward = new THREE.Vector3().crossVectors(vRight, vUpRaw).normalize();
     const vUp = new THREE.Vector3().crossVectors(vForward, vRight).normalize();
 
-    // Compute exact pixel-perfect viewport coordinates
-    const x = (pForehead.x - 0.5) * viewport.width;
-    const y = -(pForehead.y - 0.5) * viewport.height;
+    // 📏 PERSPECTIVE PROJECTION LOCK
+    const cameraZ = 8; // Defined distance of perspective camera inside Canvas
     const z = pForehead.z * -11.5;
+    
+    // Compute projection scale to correct perspective division shift as face moves depth-wise or off-axis
+    const projectionScale = (cameraZ - z) / cameraZ;
+
+    // Compute exact pixel-perfect viewport coordinates, dynamically scaled to active depth plane!
+    const x = (pForehead.x - 0.5) * viewport.width * projectionScale;
+    const y = -(pForehead.y - 0.5) * viewport.height * projectionScale;
 
     const headPos = new THREE.Vector3(x, y, z);
-    const upwardOffset = faceHeight * (viewport.height * 0.18);
+    
+    // Compute physical heights at target depth so offset remains constant and locked above head
+    const physicalFaceHeight = faceHeight * viewport.height * projectionScale;
+    const upwardOffset = physicalFaceHeight * 0.18; // Pre-calibrated ratio
+    
     const targetPos = headPos.clone().addScaledVector(vUp, upwardOffset);
 
     const damping = 0.25;
     groupRef.current.position.lerp(targetPos, damping);
 
-    // 🚀 BALANCED MULTIPLIER: Reduced from 0.78 to 0.50 to perfectly calibrate the new high-density basket asset!
-    const baseScale = viewport.width * 0.50;
-    const targetScaleFactor = faceWidth * baseScale;
+    // 🚀 ABSOLUTE PHYSICAL SCALING: Translate 2D screen size into constant 3D world units
+    const physicalFaceWidth = faceWidth * viewport.width * projectionScale;
+    
+    // Multiply physical width by the exact pre-configured user constant (0.50)
+    const targetScaleFactor = physicalFaceWidth * 0.50;
     
     // Store for the graceful exit animation later!
     lastTrackedScaleRef.current = targetScaleFactor;
